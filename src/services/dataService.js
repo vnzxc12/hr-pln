@@ -702,6 +702,33 @@ export const dataService = {
     return companySettings;
   },
 
+  // --- CLEAR ALL WORKFORCE DATA (CLEAN SLATE LIVE MODE) ---
+  clearAllWorkforceData() {
+    employees = [];
+    projects = [];
+    sites = [];
+    siteAssignments = [];
+    documents = [];
+    payrollPeriods = [];
+    payrollRecords = [];
+    attendanceLogs = [];
+    leaveRequests = [];
+    notifications = [];
+    auditLogs = [];
+
+    saveToStorage('employees', []);
+    saveToStorage('projects', []);
+    saveToStorage('sites', []);
+    saveToStorage('site_assignments', []);
+    saveToStorage('documents', []);
+    saveToStorage('payroll_periods', []);
+    saveToStorage('payroll_records', []);
+    saveToStorage('attendance', []);
+    saveToStorage('leave_requests', []);
+    saveToStorage('notifications', []);
+    saveToStorage('audit_logs', []);
+  },
+
   // --- RESET TO DEMO FACTORY ---
   resetToDemoFactory() {
     localStorage.clear();

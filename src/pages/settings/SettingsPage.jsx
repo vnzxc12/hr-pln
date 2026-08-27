@@ -5,34 +5,49 @@ import {
   Users,
   Briefcase,
   DollarSign,
-  FileText,
   Plus,
   Edit2,
+  Trash2,
   Check,
   RotateCcw,
   ShieldCheck,
-  CheckCircle2
+  Shield,
+  UserCheck,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
-import { useAuth, DEMO_USERS } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import Modal from '../../components/common/Modal';
 
 export const SettingsPage = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, users, createUser, updateUser, deleteUser, isAdmin } = useAuth();
   const { showToast } = useNotifications();
 
-  const [activeTab, setActiveTab] = useState('company');
+  const [activeTab, setActiveTab] = useState('users'); // Default to Users tab
 
   const [companySettings, setCompanySettings] = useState({});
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
-  const [documentCategories, setDocumentCategories] = useState([]);
   const [govRules, setGovRules] = useState([]);
 
   // Modals
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isDesigModalOpen, setIsDesigModalOpen] = useState(false);
   const [isDeptModalOpen, setIsDeptModalOpen] = useState(false);
+
+  // New User Form State
+  const [newUserData, setNewUserData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'employee', // 'admin' | 'employee'
+    title: '',
+    department: 'Operations'
+  });
 
   const [newDesig, setNewDesig] = useState({
     code: '',
@@ -53,13 +68,56 @@ export const SettingsPage = () => {
     setCompanySettings(dataService.getCompanySettings());
     setDepartments(dataService.getDepartments());
     setDesignations(dataService.getDesignations());
-    setDocumentCategories(dataService.getDocumentCategories());
     setGovRules(dataService.getGovernmentRules());
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Handle User Creation
+  const handleCreateUser = (e) => {
+    e.preventDefault();
+    try {
+      if (!newUserData.name.trim() || !newUserData.email.trim() || !newUserData.password) {
+        alert('Please fill out all required fields.');
+        return;
+      }
+
+      createUser(newUserData);
+      showToast(`User account for ${newUserData.name} created successfully.`, 'success');
+      setIsUserModalOpen(false);
+      setNewUserData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'employee',
+        title: '',
+        department: 'Operations'
+      });
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // Toggle user active status
+  const handleToggleUserStatus = (user) => {
+    const nextStatus = user.status === 'active' ? 'inactive' : 'active';
+    updateUser(user.id, { status: nextStatus });
+    showToast(`Account status updated to ${nextStatus}.`, 'info');
+  };
+
+  // Delete user account
+  const handleDeleteUser = (user) => {
+    if (window.confirm(`Are you sure you want to remove the account for ${user.name}?`)) {
+      try {
+        deleteUser(user.id);
+        showToast(`User ${user.name} removed.`, 'info');
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+  };
 
   const handleSaveCompany = (e) => {
     e.preventDefault();
@@ -93,9 +151,11 @@ export const SettingsPage = () => {
     loadData();
   };
 
-  const handleResetFactoryDemo = () => {
-    if (window.confirm('Reset all databases, employees, payroll, and logs back to the clean Project Lunayve Demo state?')) {
-      dataService.resetToDemoFactory();
+  const handleClearAllData = () => {
+    if (window.confirm('Clear all demo workforce, attendance, and payroll data? (The system will be completely clean with 0 employees, ready for live entries).')) {
+      dataService.clearAllWorkforceData();
+      showToast('All workforce records cleared for clean live deployment.', 'success');
+      setTimeout(() => window.location.reload(), 500);
     }
   };
 
@@ -106,30 +166,30 @@ export const SettingsPage = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 font-display flex items-center gap-2">
             <Settings className="w-6 h-6 text-emerald-700" />
-            System & HR Configuration
+            System Governance & User Accounts
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Manage company profile, custom designations, departments, statutory contribution tables, and security
+            Manage user accounts, assign Admin vs Employee roles, and configure organization settings
           </p>
         </div>
 
         <button
-          onClick={handleResetFactoryDemo}
+          onClick={handleClearAllData}
           className="px-3.5 py-2 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
         >
           <RotateCcw className="w-4 h-4" />
-          <span>Reset Demo Data</span>
+          <span>Clear All Data (Clean Slate)</span>
         </button>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         {[
+          { id: 'users', label: `User Accounts & Access (${users.length})`, icon: Users },
           { id: 'company', label: 'Company Profile', icon: Building },
           { id: 'designations', label: `Designations (${designations.length})`, icon: Briefcase },
           { id: 'departments', label: `Departments (${departments.length})`, icon: Building },
-          { id: 'payroll_rules', label: 'Government Contribution Tables', icon: DollarSign },
-          { id: 'users', label: 'User Roles & RBAC', icon: Users }
+          { id: 'payroll_rules', label: 'Government Contribution Tables', icon: DollarSign }
         ].map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -150,7 +210,106 @@ export const SettingsPage = () => {
         })}
       </div>
 
-      {/* TAB 1: COMPANY PROFILE */}
+      {/* TAB 1: USER ACCOUNTS & RBAC MANAGEMENT */}
+      {activeTab === 'users' && (
+        <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-subtle space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">System User Accounts</h3>
+              <p className="text-xs text-slate-500">
+                Create and manage login access. Admin accounts have full access; Employee accounts can only access generic info and common files.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsUserModalOpen(true)}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create New User Account</span>
+            </button>
+          </div>
+
+          <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th className="p-3.5 pl-5">User</th>
+                  <th className="p-3.5">Email Address</th>
+                  <th className="p-3.5">Role Access</th>
+                  <th className="p-3.5">Title / Department</th>
+                  <th className="p-3.5">Status</th>
+                  <th className="p-3.5 pr-5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {users.map((u) => {
+                  const isRootAdmin = u.id === 'usr_root_admin_001';
+                  return (
+                    <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-3.5 pl-5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-emerald-950 text-emerald-300 font-bold flex items-center justify-center text-xs">
+                            {u.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900">{u.name}</p>
+                            {isRootAdmin && (
+                              <span className="text-[10px] text-emerald-600 font-bold">Primary Root Admin</span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3.5 font-mono text-slate-700">{u.email}</td>
+                      <td className="p-3.5">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          u.role === 'admin'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-sky-100 text-sky-800'
+                        }`}>
+                          <Shield className="w-3 h-3" />
+                          {u.role === 'admin' ? 'Administrator (Full Access)' : 'Employee (Restricted Access)'}
+                        </span>
+                      </td>
+                      <td className="p-3.5 text-slate-600">
+                        <p className="font-semibold text-slate-800">{u.title || '-'}</p>
+                        <p className="text-[11px] text-slate-500">{u.department || 'Operations'}</p>
+                      </td>
+                      <td className="p-3.5">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                          u.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {u.status === 'active' ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="p-3.5 pr-5 text-right">
+                        {!isRootAdmin && (
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleToggleUserStatus(u)}
+                              className="text-xs font-semibold text-slate-600 hover:text-slate-900 underline"
+                            >
+                              {u.status === 'active' ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u)}
+                              className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
+                              title="Delete user"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: COMPANY PROFILE */}
       {activeTab === 'company' && (
         <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-subtle space-y-6 max-w-3xl">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
@@ -232,17 +391,17 @@ export const SettingsPage = () => {
         </div>
       )}
 
-      {/* TAB 2: DESIGNATIONS */}
+      {/* TAB 3: DESIGNATIONS */}
       {activeTab === 'designations' && (
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-subtle space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-slate-900">Configurable Trade & Professional Positions</h3>
-              <p className="text-xs text-slate-500">Unlimited designations mapped to Office vs Site</p>
+              <p className="text-xs text-slate-500">Positions mapped to Office vs Site</p>
             </div>
             <button
               onClick={() => setIsDesigModalOpen(true)}
-              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Add Designation</span>
@@ -289,7 +448,7 @@ export const SettingsPage = () => {
         </div>
       )}
 
-      {/* TAB 3: DEPARTMENTS */}
+      {/* TAB 4: DEPARTMENTS */}
       {activeTab === 'departments' && (
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-subtle space-y-4">
           <div className="flex items-center justify-between">
@@ -299,7 +458,7 @@ export const SettingsPage = () => {
             </div>
             <button
               onClick={() => setIsDeptModalOpen(true)}
-              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Add Department</span>
@@ -323,12 +482,12 @@ export const SettingsPage = () => {
         </div>
       )}
 
-      {/* TAB 4: GOVERNMENT CONTRIBUTION TABLES */}
+      {/* TAB 5: GOVERNMENT CONTRIBUTION TABLES */}
       {activeTab === 'payroll_rules' && (
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-subtle space-y-6">
           <div>
             <h3 className="text-sm font-bold text-slate-900">Configurable Government Contribution Tables</h3>
-            <p className="text-xs text-slate-500">Rules applied in real-time to payroll computations without modifying core code</p>
+            <p className="text-xs text-slate-500">Applied in real-time to statutory payroll computations</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -372,33 +531,110 @@ export const SettingsPage = () => {
         </div>
       )}
 
-      {/* TAB 5: USERS & RBAC */}
-      {activeTab === 'users' && (
-        <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-subtle space-y-6">
+      {/* CREATE USER ACCOUNT MODAL */}
+      <Modal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        title="Create New User Account"
+        subtitle="Provide system access credentials with Admin or Employee role"
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">User Roles & Access Control (RBAC)</h3>
-            <p className="text-xs text-slate-500">Configured persona credentials and system permissions</p>
+            <label className="block font-bold text-slate-700 mb-1">Full Name *</label>
+            <input
+              type="text"
+              required
+              value={newUserData.name}
+              onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
+              placeholder="e.g. Maria Del Rosario"
+              className="w-full p-2.5 rounded-xl border border-slate-300 text-slate-900 font-medium"
+            />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {DEMO_USERS.map((user) => (
-              <div key={user.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-4 text-xs">
-                <img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-full object-cover shrink-0 border border-slate-300" />
-                <div className="space-y-1 flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-slate-900 text-sm">{user.name}</h4>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                      {user.role}
-                    </span>
-                  </div>
-                  <p className="text-slate-500">{user.email}</p>
-                  <p className="text-[11px] text-slate-600 font-semibold">{user.title}</p>
-                </div>
-              </div>
-            ))}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Work Email Address *</label>
+            <input
+              type="email"
+              required
+              value={newUserData.email}
+              onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+              placeholder="name@lunayveconstruction.com"
+              className="w-full p-2.5 rounded-xl border border-slate-300 text-slate-900 font-medium"
+            />
           </div>
-        </div>
-      )}
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Password *</label>
+            <input
+              type="password"
+              required
+              value={newUserData.password}
+              onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+              placeholder="••••••••••••"
+              className="w-full p-2.5 rounded-xl border border-slate-300 text-slate-900 font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Access Role *</label>
+            <select
+              value={newUserData.role}
+              onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value })}
+              className="w-full p-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold"
+            >
+              <option value="employee">Employee (Generic Directory & Common Files Only)</option>
+              <option value="admin">Administrator (Full System Access & User Creation)</option>
+            </select>
+            <p className="text-[10px] text-slate-500 mt-1">
+              {newUserData.role === 'admin'
+                ? '⭐ Admin can create user accounts, approve payroll, view all compensations and government IDs.'
+                : '🔒 Employee can only view general staff directory and submit attendance/leave. Salaries and government IDs are hidden.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Job Title</label>
+              <input
+                type="text"
+                value={newUserData.title}
+                onChange={(e) => setNewUserData({ ...newUserData, title: e.target.value })}
+                placeholder="e.g. Civil Engineer"
+                className="w-full p-2.5 rounded-xl border border-slate-300 text-slate-900"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Department</label>
+              <select
+                value={newUserData.department}
+                onChange={(e) => setNewUserData({ ...newUserData, department: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-slate-300 text-slate-900"
+              >
+                {departments.map(d => (
+                  <option key={d.id} value={d.name}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-between pt-3 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={() => setIsUserModalOpen(false)}
+              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl font-semibold cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm cursor-pointer"
+            >
+              Create Account
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* CREATE DESIGNATION MODAL */}
       <Modal

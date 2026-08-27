@@ -25,7 +25,7 @@ import AuditLogsPage from './pages/audit/AuditLogsPage';
 import SettingsPage from './pages/settings/SettingsPage';
 
 const ProtectedLayout = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
@@ -64,11 +64,14 @@ const ProtectedLayout = () => {
             <Route path="/sites" element={<SitesListPage />} />
             <Route path="/attendance" element={<AttendanceListPage />} />
             <Route path="/leave" element={<LeaveRequestsPage />} />
-            <Route path="/payroll" element={<PayrollPeriodsPage />} />
-            <Route path="/payroll/labor-cost" element={<LaborCostAnalyticsPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/audit" element={<AuditLogsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+
+            {/* Admin-only Protected Routes */}
+            <Route path="/payroll" element={isAdmin ? <PayrollPeriodsPage /> : <Navigate to="/" replace />} />
+            <Route path="/payroll/labor-cost" element={isAdmin ? <LaborCostAnalyticsPage /> : <Navigate to="/" replace />} />
+            <Route path="/reports" element={isAdmin ? <ReportsPage /> : <Navigate to="/" replace />} />
+            <Route path="/audit" element={isAdmin ? <AuditLogsPage /> : <Navigate to="/" replace />} />
+            <Route path="/settings" element={isAdmin ? <SettingsPage /> : <Navigate to="/" replace />} />
+            
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

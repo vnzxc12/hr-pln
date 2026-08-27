@@ -95,10 +95,10 @@ export const DashboardPage = () => {
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             Project Lunayve Workforce Platform
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-            Welcome, {currentUser?.name}
+          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-white">
+            Welcome, <span className="text-emerald-300">{currentUser?.name || 'Administrator'}</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-200 mt-2 leading-relaxed">
             Centralized monitoring for <span className="font-semibold text-emerald-400">{officeEmployees} Office Professionals</span> and <span className="font-semibold text-sky-400">{siteWorkers} Construction Site Workers</span> across 3 active infrastructure projects.
           </p>
         </div>

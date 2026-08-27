@@ -39,7 +39,7 @@ import PayslipModal from '../../components/payslip/PayslipModal';
 export const EmployeeProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser, canManageEmployees, canAccessPayroll } = useAuth();
+  const { currentUser, canManageEmployees, isAdmin } = useAuth();
   const { showToast } = useNotifications();
 
   const [employee, setEmployee] = useState(null);
@@ -262,13 +262,13 @@ export const EmployeeProfilePage = () => {
         {[
           { id: 'personal', label: 'Personal Information', icon: User },
           { id: 'employment', label: 'Employment Details', icon: Briefcase },
-          { id: 'government', label: 'Government & Tax', icon: FileCheck },
-          { id: 'compensation', label: 'Compensation & Salary', icon: DollarSign },
+          ...(isAdmin ? [{ id: 'government', label: 'Government & Tax (Admin)', icon: FileCheck }] : []),
+          ...(isAdmin ? [{ id: 'compensation', label: 'Compensation & Salary (Admin)', icon: DollarSign }] : []),
           { id: 'documents', label: `Documents (${documents.length})`, icon: FileText },
           { id: 'sites', label: `Site Assignment History (${siteHistory.length})`, icon: History },
           { id: 'attendance', label: `Attendance (${attendance.length})`, icon: Clock },
           { id: 'leave', label: `Leave Records (${leaveRequests.length})`, icon: CalendarCheck },
-          ...(canAccessPayroll ? [{ id: 'payroll', label: `Payroll & Payslips (${payrollHistory.length})`, icon: DollarSign }] : [])
+          ...(isAdmin ? [{ id: 'payroll', label: `Payroll & Payslips (${payrollHistory.length})`, icon: DollarSign }] : [])
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

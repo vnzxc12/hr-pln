@@ -23,7 +23,7 @@ import EmployeeCreateEditModal from './EmployeeCreateEditModal';
 export const EmployeeListPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { canManageEmployees, currentUser } = useAuth();
+  const { canManageEmployees, currentUser, isAdmin } = useAuth();
 
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -328,10 +328,16 @@ export const EmployeeListPage = () => {
                         <p className="text-[11px] text-slate-500 font-mono">{site?.name || 'Office'}</p>
                       </td>
 
-                      {/* Compensation */}
+                      {/* Compensation (Admin Only) */}
                       <td className="p-3.5">
-                        <p className="font-mono font-bold text-slate-900">₱{Number(emp.base_rate).toLocaleString()}</p>
-                        <p className="text-[10px] text-slate-500">{emp.rate_type} rate</p>
+                        {isAdmin ? (
+                          <>
+                            <p className="font-mono font-bold text-slate-900">₱{Number(emp.base_rate).toLocaleString()}</p>
+                            <p className="text-[10px] text-slate-500">{emp.rate_type} rate</p>
+                          </>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">Confidential</span>
+                        )}
                       </td>
 
                       {/* Status */}
