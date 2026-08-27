@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       console.warn('Error reading active session:', e);
     }
-    return DEFAULT_ROOT_ADMIN;
+    return null;
   });
 
   // Save users when updated
