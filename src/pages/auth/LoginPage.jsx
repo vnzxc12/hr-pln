@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Lock,
   Mail,
+  User,
   Eye,
   EyeOff,
   ShieldCheck,
@@ -39,7 +40,8 @@ export const LoginPage = () => {
   const [policyType, setPolicyType] = useState('privacy'); // 'privacy' | 'terms' | 'support'
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
-  const from = location.state?.from?.pathname || '/';
+  const rawFrom = location.state?.from?.pathname;
+  const from = (rawFrom && rawFrom !== '/login') ? rawFrom : '/';
 
   // If user already authenticated, redirect
   useEffect(() => {
