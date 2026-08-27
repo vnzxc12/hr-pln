@@ -63,11 +63,11 @@ ON CONFLICT (code) DO UPDATE SET title = EXCLUDED.title;
 
 -- 4. PROJECTS & CONSTRUCTION SITES
 INSERT INTO projects (id, project_code, name, client, location, project_manager_name, start_date, end_date, estimated_budget, status, description) VALUES
-('c1000000-0000-4000-8000-000000000001', 'PRJ-2026-ALPHA', 'Lunayve Commercial Tower Alpha', 'Megaworld Prime Holdings', 'Ortigas Center, Pasig City', 'Michellen Serrano', '2026-01-15', '2027-12-31', 450000000.00, 'Active', '45-Storey Grade-A Commercial High-Rise Tower with 5-level basement parking.')
+('c1000000-0000-4000-8000-000000000001', 'PRJ-2026-ALPHA', 'Lunayve Commercial Tower Alpha', 'Megaworld Prime Holdings', 'Emerald Ave., Ortigas Center, Pasig City', 'Michellen Serrano', '2026-01-15', '2027-12-31', 450000000.00, 'Active', '45-Storey Grade-A Commercial High-Rise Tower with 5-level basement parking.')
 ON CONFLICT (project_code) DO NOTHING;
 
 INSERT INTO sites (id, site_code, name, project_id, location, site_supervisor_name, foreman_name, start_date, end_date, status) VALUES
-('d1000000-0000-4000-8000-000000000001', 'SITE-ALPHA-01', 'Tower Alpha - Core & Superstructure', 'c1000000-0000-4000-8000-000000000001', 'Ortigas Central Sector, Pasig', 'Danilo Cruz', 'Danilo Cruz', '2026-01-15', '2027-10-15', 'Active')
+('d1000000-0000-4000-8000-000000000001', 'SITE-ALPHA-01', 'Tower Alpha - Core & Superstructure', 'c1000000-0000-4000-8000-000000000001', 'Zone A - Ortigas Central Sector, Pasig', 'Danilo Cruz', 'Danilo Cruz', '2026-01-15', '2027-10-15', 'Active')
 ON CONFLICT (site_code) DO NOTHING;
 
 -- 5. DOCUMENT CATEGORIES
@@ -93,7 +93,7 @@ INSERT INTO government_contribution_rules (id, agency, rule_name, effective_date
 ('f2000000-0000-4000-8000-000000000003', 'Pag-IBIG', 'Pag-IBIG Mandatory Contribution 2026 (₱200 Cap)', '2026-01-01', 1500.00, 10000.00, 0.02, 0.02, 200.00, 200.00, true)
 ON CONFLICT (id) DO NOTHING;
 
--- 8. WORKFORCE (3 Office Professionals + 5 Skilled Construction Site Workers)
+-- 8. WORKFORCE (3 Office Employees + 5 Skilled Site Workers)
 INSERT INTO employees (
   id, employee_id, first_name, middle_name, last_name, suffix, profile_photo,
   workforce_category, date_of_birth, gender, civil_status, nationality, contact_number, email, address,
@@ -101,14 +101,14 @@ INSERT INTO employees (
   assigned_project_id, assigned_site_id, rate_type, base_rate, monthly_allowance, daily_allowance,
   sss_number, philhealth_number, pagibig_number, tin_number
 ) VALUES
--- ==================== 1. OFFICE: John Marc Guerra | Procurement Officer ====================
+-- 1. John Marc Guerra | Procurement Officer
 (
   'f3000000-0000-4000-8000-000000000001',
   'PLN-2026-001',
   'John Marc',
-  '',
+  NULL,
   'Guerra',
-  '',
+  NULL,
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&fit=crop&q=80',
   'office',
   '1992-04-18',
@@ -120,8 +120,8 @@ INSERT INTO employees (
   'Ortigas Center, Pasig City, Metro Manila',
   'Regular',
   'Active',
-  'a1000000-0000-4000-8000-000000000007', -- Procurement & Logistics Dept
-  'b1000000-0000-4000-8000-000000000001', -- Procurement Officer
+  'a1000000-0000-4000-8000-000000000007',
+  'b1000000-0000-4000-8000-000000000001',
   '2024-02-01',
   'c1000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001',
@@ -135,14 +135,14 @@ INSERT INTO employees (
   '284-910-482-000'
 ),
 
--- ==================== 2. OFFICE: Jaquelyn Espina | HR ====================
+-- 2. Jaquelyn Espina | HR
 (
   'f3000000-0000-4000-8000-000000000002',
   'PLN-2026-002',
   'Jaquelyn',
-  '',
+  NULL,
   'Espina',
-  '',
+  NULL,
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&fit=crop&q=80',
   'office',
   '1994-08-22',
@@ -154,8 +154,8 @@ INSERT INTO employees (
   'Mandaluyong City, Metro Manila',
   'Regular',
   'Active',
-  'a1000000-0000-4000-8000-000000000002', -- Human Resources Dept
-  'b1000000-0000-4000-8000-000000000002', -- HR Officer
+  'a1000000-0000-4000-8000-000000000002',
+  'b1000000-0000-4000-8000-000000000002',
   '2023-06-15',
   NULL,
   NULL,
@@ -169,14 +169,14 @@ INSERT INTO employees (
   '394-102-948-000'
 ),
 
--- ==================== 3. OFFICE: Michellen Serrano | Project Architect ====================
+-- 3. Michellen Serrano | Project Architect
 (
   'f3000000-0000-4000-8000-000000000003',
   'PLN-2026-003',
   'Michellen',
-  '',
+  NULL,
   'Serrano',
-  '',
+  NULL,
   'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&fit=crop&q=80',
   'office',
   '1990-11-14',
@@ -188,8 +188,8 @@ INSERT INTO employees (
   'BGC, Taguig City, Metro Manila',
   'Regular',
   'Active',
-  'a1000000-0000-4000-8000-000000000004', -- Engineering & Architecture Dept
-  'b1000000-0000-4000-8000-000000000003', -- Project Architect
+  'a1000000-0000-4000-8000-000000000004',
+  'b1000000-0000-4000-8000-000000000003',
   '2023-01-10',
   'c1000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001',
@@ -203,14 +203,14 @@ INSERT INTO employees (
   '482-193-840-000'
 ),
 
--- ==================== 4. SITE WORKER: Danilo Cruz | General Site Foreman ====================
+-- 4. Danilo Cruz | General Site Foreman
 (
   'f3000000-0000-4000-8000-000000000004',
   'PLN-2026-004',
   'Danilo',
   'Reyes',
   'Cruz',
-  '',
+  NULL,
   'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&fit=crop&q=80',
   'site',
   '1979-07-14',
@@ -222,8 +222,8 @@ INSERT INTO employees (
   'Brgy. Rosario, Pasig City, Metro Manila',
   'Project-Based',
   'Active',
-  'a1000000-0000-4000-8000-000000000005', -- Construction Operations Dept
-  'b1000000-0000-4000-8000-000000000006', -- General Site Foreman
+  'a1000000-0000-4000-8000-000000000005',
+  'b1000000-0000-4000-8000-000000000006',
   '2023-03-01',
   'c1000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001',
@@ -237,14 +237,14 @@ INSERT INTO employees (
   '194-882-019-000'
 ),
 
--- ==================== 5. SITE WORKER: Rogelio Santos | Master Formwork Carpenter ====================
+-- 5. Rogelio Santos | Master Formwork Carpenter
 (
   'f3000000-0000-4000-8000-000000000005',
   'PLN-2026-005',
   'Rogelio',
   'Mendoza',
   'Santos',
-  '',
+  NULL,
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&fit=crop&q=80',
   'site',
   '1985-09-28',
@@ -252,12 +252,12 @@ INSERT INTO employees (
   'Married',
   'Filipino',
   '+63 928 554 1928',
-  '',
+  NULL,
   'Cainta, Rizal',
   'Project-Based',
   'Active',
-  'a1000000-0000-4000-8000-000000000005', -- Construction Operations Dept
-  'b1000000-0000-4000-8000-000000000007', -- Master Formwork Carpenter
+  'a1000000-0000-4000-8000-000000000005',
+  'b1000000-0000-4000-8000-000000000007',
   '2024-01-15',
   'c1000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001',
@@ -271,14 +271,14 @@ INSERT INTO employees (
   '229-481-901-000'
 ),
 
--- ==================== 6. SITE WORKER: Eduardo Ramos | Finishing Mason ====================
+-- 6. Eduardo Ramos | Finishing Mason
 (
   'f3000000-0000-4000-8000-000000000006',
   'PLN-2026-006',
   'Eduardo',
   'Flores',
   'Ramos',
-  '',
+  NULL,
   'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&fit=crop&q=80',
   'site',
   '1988-12-05',
@@ -286,12 +286,12 @@ INSERT INTO employees (
   'Married',
   'Filipino',
   '+63 919 772 4910',
-  '',
+  NULL,
   'Taytay, Rizal',
   'Project-Based',
   'Active',
-  'a1000000-0000-4000-8000-000000000005', -- Construction Operations Dept
-  'b1000000-0000-4000-8000-000000000008', -- Finishing Mason
+  'a1000000-0000-4000-8000-000000000005',
+  'b1000000-0000-4000-8000-000000000008',
   '2024-02-10',
   'c1000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001',
@@ -305,14 +305,14 @@ INSERT INTO employees (
   '301-948-281-000'
 ),
 
--- ==================== 7. SITE WORKER: Nestor Bautista | SMAW/GTAW Certified Welder ====================
+-- 7. Nestor Bautista | SMAW/GTAW Certified Welder
 (
   'f3000000-0000-4000-8000-000000000007',
   'PLN-2026-007',
   'Nestor',
   'Gomez',
   'Bautista',
-  '',
+  NULL,
   'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&fit=crop&q=80',
   'site',
   '1983-03-20',
@@ -320,12 +320,12 @@ INSERT INTO employees (
   'Married',
   'Filipino',
   '+63 916 448 9102',
-  '',
+  NULL,
   'Marikina City, Metro Manila',
   'Project-Based',
   'Active',
-  'a1000000-0000-4000-8000-000000000005', -- Construction Operations Dept
-  'b1000000-0000-4000-8000-000000000010', -- Welder
+  'a1000000-0000-4000-8000-000000000005',
+  'b1000000-0000-4000-8000-000000000010',
   '2024-03-01',
   'c1000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001',
@@ -339,14 +339,14 @@ INSERT INTO employees (
   '419-204-881-000'
 ),
 
--- ==================== 8. SITE WORKER: Arnel Mendoza | Rebar Steelman ====================
+-- 8. Arnel Mendoza | Rebar Steelman
 (
   'f3000000-0000-4000-8000-000000000008',
   'PLN-2026-008',
   'Arnel',
   'Villanueva',
   'Mendoza',
-  '',
+  NULL,
   'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=300&fit=crop&q=80',
   'site',
   '1993-10-10',
@@ -354,12 +354,12 @@ INSERT INTO employees (
   'Single',
   'Filipino',
   '+63 927 381 9920',
-  '',
+  NULL,
   'Antipolo City, Rizal',
   'Project-Based',
   'Active',
-  'a1000000-0000-4000-8000-000000000005', -- Construction Operations Dept
-  'b1000000-0000-4000-8000-000000000011', -- Rebar Steelman
+  'a1000000-0000-4000-8000-000000000005',
+  'b1000000-0000-4000-8000-000000000011',
   '2024-04-15',
   'c1000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001',
