@@ -54,7 +54,7 @@ export const LoginPage = () => {
 
     const cleanIdentifier = identifier.trim();
     if (!cleanIdentifier) {
-      setError('Please enter your email or username.');
+      setError('Please enter your username.');
       return;
     }
 
@@ -216,19 +216,19 @@ export const LoginPage = () => {
 
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              {/* Email / Username */}
+              {/* Username */}
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5">
-                  Email / Username
+                  Username
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     required
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="Enter your email or username"
+                    placeholder="Enter your username"
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 text-xs font-medium bg-white"
                   />
                 </div>

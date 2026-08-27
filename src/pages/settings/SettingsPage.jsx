@@ -371,7 +371,7 @@ export const SettingsPage = () => {
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="p-3.5 pl-5">User</th>
-                  <th className="p-3.5">Email Address</th>
+                  <th className="p-3.5">Username (Login ID)</th>
                   <th className="p-3.5">Role Access</th>
                   <th className="p-3.5">Title / Department</th>
                   <th className="p-3.5">Status</th>
@@ -396,7 +396,9 @@ export const SettingsPage = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="p-3.5 font-mono text-slate-700">{u.email}</td>
+                      <td className="p-3.5 font-mono text-emerald-900 font-bold">
+                        @{u.username || 'admin'}
+                      </td>
                       <td className="p-3.5">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                           u.role === 'admin'
@@ -756,13 +758,24 @@ export const SettingsPage = () => {
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Work Email Address *</label>
+            <label className="block font-bold text-slate-700 mb-1">Username (Login ID) *</label>
+            <input
+              type="text"
+              required
+              value={newUserData.username || ''}
+              onChange={(e) => setNewUserData({ ...newUserData, username: e.target.value })}
+              placeholder="e.g. maria.delrosario or eng.bernardo"
+              className="w-full p-2.5 rounded-xl border border-slate-300 font-mono text-slate-900 font-bold text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Work Email Address</label>
             <input
               type="email"
-              required
               value={newUserData.email}
               onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
-              placeholder="name@lunayveconstruction.com"
+              placeholder="name@lunayveconstruction.com (Optional)"
               className="w-full p-2.5 rounded-xl border border-slate-300 text-slate-900 font-medium"
             />
           </div>

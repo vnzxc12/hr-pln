@@ -9,8 +9,9 @@ const CURRENT_USER_STORAGE_KEY = 'lunayve_active_session';
 const DEFAULT_ROOT_ADMIN = {
   id: 'usr_root_admin_001',
   name: 'System Administrator',
+  username: 'admin',
   email: 'admin@lunayveconstruction.com',
-  password: 'Admin@123', // In real Supabase Auth, handles password hashing
+  password: 'Admin@123',
   role: 'admin', // 'admin' | 'employee'
   title: 'Chief Administrator',
   department: 'Executive Management',
@@ -24,7 +25,10 @@ export const AuthProvider = ({ children }) => {
       const stored = localStorage.getItem(USERS_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Ensure root admin has username
+          return parsed.map(u => u.id === DEFAULT_ROOT_ADMIN.id ? { ...DEFAULT_ROOT_ADMIN, ...u, username: u.username || 'admin' } : u);
+        }
       }
     } catch (e) {
       console.warn('Error reading system users:', e);
@@ -41,7 +45,6 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       console.warn('Error reading active session:', e);
     }
-    // Default active session is the Root Admin
     return DEFAULT_ROOT_ADMIN;
   });
 
@@ -51,15 +54,15 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
 
-  // Login handler
-  const login = (email, password) => {
-    const cleanEmail = email.trim().toLowerCase();
+  // Login handler with username (or email fallback)
+  const login = (identifier, password) => {
+    const cleanInput = identifier.trim().toLowerCase();
     const user = users.find(
-      u => u.email.toLowerCase() === cleanEmail && u.password === password
+      u => (u.username?.toLowerCase() === cleanInput || u.email?.toLowerCase() === cleanInput) && u.password === password
     );
 
     if (!user) {
-      return { success: false, error: 'Invalid email or password.' };
+      return { success: false, error: 'Invalid username or password.' };
     }
 
     if (user.status === 'inactive') {
@@ -69,7 +72,8 @@ export const AuthProvider = ({ children }) => {
     const sessionUser = {
       id: user.id,
       name: user.name,
-      email: user.email,
+      username: user.username || user.email?.split('@')[0] || 'user',
+      email: user.email || '',
       role: user.role,
       title: user.title || (user.role === 'admin' ? 'Administrator' : 'Staff Member'),
       department: user.department || 'General'
@@ -92,15 +96,18 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Unauthorized: Only administrators can create new user accounts.');
     }
 
-    const emailExists = users.some(u => u.email.toLowerCase() === userData.email.trim().toLowerCase());
-    if (emailExists) {
-      throw new Error('An account with this email address already exists.');
+    const username = (userData.username || userData.email?.split('@')[0] || userData.name.toLowerCase().replace(/\s+/g, '.')).trim().toLowerCase();
+    
+    const usernameExists = users.some(u => u.username?.toLowerCase() === username);
+    if (usernameExists) {
+      throw new Error(`An account with the username "${username}" already exists.`);
     }
 
     const newUser = {
       id: `usr_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       name: userData.name.trim(),
-      email: userData.email.trim().toLowerCase(),
+      username,
+      email: userData.email?.trim() || `${username}@lunayve.local`,
       password: userData.password || 'Lunayve@2026',
       role: userData.role || 'employee', // 'admin' | 'employee'
       title: userData.title || (userData.role === 'admin' ? 'Administrator' : 'Employee'),
@@ -125,7 +132,6 @@ export const AuthProvider = ({ children }) => {
     });
     saveUsers(updated);
 
-    // If updating currently logged in user, refresh session
     if (currentUser?.id === userId) {
       const refreshed = { ...currentUser, ...updates };
       setCurrentUser(refreshed);
