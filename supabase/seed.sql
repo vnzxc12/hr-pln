@@ -1,6 +1,16 @@
 -- ==============================================================================
--- PROJECT LUNAYVE CONSTRUCTION HRMS - COMPLETE RESET & CLEAN SEED FOR SUPABASE
--- Run this in the Supabase SQL Editor to wipe old data and seed the 3 employees.
+-- PROJECT LUNAYVE CONSTRUCTION HRMS - COMPLETE RESET & SEED FOR SUPABASE
+-- Contains:
+-- 3 Office Employees:
+--   1. John Marc Guerra | Procurement Officer
+--   2. Jaquelyn Espina | HR
+--   3. Michellen Serrano | Project Architect
+-- 5 Skilled Site Workers:
+--   4. Danilo Cruz | General Site Foreman
+--   5. Rogelio Santos | Master Formwork Carpenter
+--   6. Eduardo Ramos | Finishing Mason
+--   7. Nestor Bautista | SMAW/GTAW Certified Welder
+--   8. Arnel Mendoza | Rebar Steelman
 -- ==============================================================================
 
 -- 1. CLEAN RESET: Clear all existing tables
@@ -57,7 +67,7 @@ INSERT INTO projects (id, project_code, name, client, location, project_manager_
 ON CONFLICT (project_code) DO NOTHING;
 
 INSERT INTO sites (id, site_code, name, project_id, location, site_supervisor_name, foreman_name, start_date, end_date, status) VALUES
-('d1000000-0000-4000-8000-000000000001', 'SITE-ALPHA-01', 'Tower Alpha - Core & Superstructure', 'c1000000-0000-4000-8000-000000000001', 'Ortigas Central Sector, Pasig', 'Rolando Mendoza', 'Danilo Cruz', '2026-01-15', '2027-10-15', 'Active')
+('d1000000-0000-4000-8000-000000000001', 'SITE-ALPHA-01', 'Tower Alpha - Core & Superstructure', 'c1000000-0000-4000-8000-000000000001', 'Ortigas Central Sector, Pasig', 'Danilo Cruz', 'Danilo Cruz', '2026-01-15', '2027-10-15', 'Active')
 ON CONFLICT (site_code) DO NOTHING;
 
 -- 5. DOCUMENT CATEGORIES
@@ -83,7 +93,7 @@ INSERT INTO government_contribution_rules (id, agency, rule_name, effective_date
 ('f2000000-0000-4000-8000-000000000003', 'Pag-IBIG', 'Pag-IBIG Mandatory Contribution 2026 (₱200 Cap)', '2026-01-01', 1500.00, 10000.00, 0.02, 0.02, 200.00, 200.00, true)
 ON CONFLICT (id) DO NOTHING;
 
--- 8. INITIAL REAL WORKFORCE (The 3 Employees)
+-- 8. WORKFORCE (3 Office Professionals + 5 Skilled Construction Site Workers)
 INSERT INTO employees (
   id, employee_id, first_name, middle_name, last_name, suffix, profile_photo,
   workforce_category, date_of_birth, gender, civil_status, nationality, contact_number, email, address,
@@ -91,7 +101,7 @@ INSERT INTO employees (
   assigned_project_id, assigned_site_id, rate_type, base_rate, monthly_allowance, daily_allowance,
   sss_number, philhealth_number, pagibig_number, tin_number
 ) VALUES
--- 1. John Marc Guerra | Procurement Officer
+-- ==================== 1. OFFICE: John Marc Guerra | Procurement Officer ====================
 (
   'f3000000-0000-4000-8000-000000000001',
   'PLN-2026-001',
@@ -125,7 +135,7 @@ INSERT INTO employees (
   '284-910-482-000'
 ),
 
--- 2. Jaquelyn Espina | HR
+-- ==================== 2. OFFICE: Jaquelyn Espina | HR ====================
 (
   'f3000000-0000-4000-8000-000000000002',
   'PLN-2026-002',
@@ -159,7 +169,7 @@ INSERT INTO employees (
   '394-102-948-000'
 ),
 
--- 3. Michellen Serrano | Project Architect
+-- ==================== 3. OFFICE: Michellen Serrano | Project Architect ====================
 (
   'f3000000-0000-4000-8000-000000000003',
   'PLN-2026-003',
@@ -191,6 +201,176 @@ INSERT INTO employees (
   '18-293840192-7',
   '1210-9382-0199',
   '482-193-840-000'
+),
+
+-- ==================== 4. SITE WORKER: Danilo Cruz | General Site Foreman ====================
+(
+  'f3000000-0000-4000-8000-000000000004',
+  'PLN-2026-004',
+  'Danilo',
+  'Reyes',
+  'Cruz',
+  '',
+  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&fit=crop&q=80',
+  'site',
+  '1979-07-14',
+  'Male',
+  'Married',
+  'Filipino',
+  '+63 917 410 8821',
+  'd.cruz@lunayveconstruction.com',
+  'Brgy. Rosario, Pasig City, Metro Manila',
+  'Project-Based',
+  'Active',
+  'a1000000-0000-4000-8000-000000000005', -- Construction Operations Dept
+  'b1000000-0000-4000-8000-000000000006', -- General Site Foreman
+  '2023-03-01',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  'Daily',
+  1100.00,
+  0,
+  150.00,
+  '03-8891024-1',
+  '14-019283940-2',
+  '1210-4491-0021',
+  '194-882-019-000'
+),
+
+-- ==================== 5. SITE WORKER: Rogelio Santos | Master Formwork Carpenter ====================
+(
+  'f3000000-0000-4000-8000-000000000005',
+  'PLN-2026-005',
+  'Rogelio',
+  'Mendoza',
+  'Santos',
+  '',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&fit=crop&q=80',
+  'site',
+  '1985-09-28',
+  'Male',
+  'Married',
+  'Filipino',
+  '+63 928 554 1928',
+  '',
+  'Cainta, Rizal',
+  'Project-Based',
+  'Active',
+  'a1000000-0000-4000-8000-000000000005', -- Construction Operations Dept
+  'b1000000-0000-4000-8000-000000000007', -- Master Formwork Carpenter
+  '2024-01-15',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  'Daily',
+  950.00,
+  0,
+  100.00,
+  '34-9910284-8',
+  '16-881920194-5',
+  '1210-5591-2910',
+  '229-481-901-000'
+),
+
+-- ==================== 6. SITE WORKER: Eduardo Ramos | Finishing Mason ====================
+(
+  'f3000000-0000-4000-8000-000000000006',
+  'PLN-2026-006',
+  'Eduardo',
+  'Flores',
+  'Ramos',
+  '',
+  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&fit=crop&q=80',
+  'site',
+  '1988-12-05',
+  'Male',
+  'Married',
+  'Filipino',
+  '+63 919 772 4910',
+  '',
+  'Taytay, Rizal',
+  'Project-Based',
+  'Active',
+  'a1000000-0000-4000-8000-000000000005', -- Construction Operations Dept
+  'b1000000-0000-4000-8000-000000000008', -- Finishing Mason
+  '2024-02-10',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  'Daily',
+  900.00,
+  0,
+  100.00,
+  '03-7728194-0',
+  '11-992019284-8',
+  '1210-9948-1823',
+  '301-948-281-000'
+),
+
+-- ==================== 7. SITE WORKER: Nestor Bautista | SMAW/GTAW Certified Welder ====================
+(
+  'f3000000-0000-4000-8000-000000000007',
+  'PLN-2026-007',
+  'Nestor',
+  'Gomez',
+  'Bautista',
+  '',
+  'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&fit=crop&q=80',
+  'site',
+  '1983-03-20',
+  'Male',
+  'Married',
+  'Filipino',
+  '+63 916 448 9102',
+  '',
+  'Marikina City, Metro Manila',
+  'Project-Based',
+  'Active',
+  'a1000000-0000-4000-8000-000000000005', -- Construction Operations Dept
+  'b1000000-0000-4000-8000-000000000010', -- Welder
+  '2024-03-01',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  'Daily',
+  1050.00,
+  0,
+  120.00,
+  '33-4819201-9',
+  '18-449102938-1',
+  '1210-7749-1029',
+  '419-204-881-000'
+),
+
+-- ==================== 8. SITE WORKER: Arnel Mendoza | Rebar Steelman ====================
+(
+  'f3000000-0000-4000-8000-000000000008',
+  'PLN-2026-008',
+  'Arnel',
+  'Villanueva',
+  'Mendoza',
+  '',
+  'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=300&fit=crop&q=80',
+  'site',
+  '1993-10-10',
+  'Male',
+  'Single',
+  'Filipino',
+  '+63 927 381 9920',
+  '',
+  'Antipolo City, Rizal',
+  'Project-Based',
+  'Active',
+  'a1000000-0000-4000-8000-000000000005', -- Construction Operations Dept
+  'b1000000-0000-4000-8000-000000000011', -- Rebar Steelman
+  '2024-04-15',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  'Daily',
+  850.00,
+  0,
+  80.00,
+  '34-1182940-3',
+  '19-440192840-7',
+  '1210-8819-2041',
+  '502-194-883-000'
 )
 ON CONFLICT (employee_id) DO NOTHING;
 
