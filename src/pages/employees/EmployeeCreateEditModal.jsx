@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, DollarSign, FileText, Check, AlertCircle } from 'lucide-react';
+import { User, Briefcase, DollarSign, FileText, Check, AlertCircle, Camera, Upload, Image as ImageIcon } from 'lucide-react';
 import Modal from '../../components/common/Modal';
 import { dataService } from '../../services/dataService';
 import { useAuth } from '../../context/AuthContext';
@@ -107,6 +107,18 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
     });
   };
 
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result;
+        handleChange('profile_photo', base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.first_name || !formData.last_name || !formData.employee_id) {
@@ -138,54 +150,54 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
       onClose={onClose}
       title={employeeToEdit ? `Edit Employee: ${employeeToEdit.first_name} ${employeeToEdit.last_name}` : 'New Employee Onboarding'}
       subtitle="Unified Master Workforce Management"
-      maxWidth="max-w-4xl"
+      maxWidth="max-w-3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Navigation Tabs */}
+        {/* TAB HEADERS */}
         <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('personal')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'personal'
-                ? 'bg-emerald-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-100'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
             <User className="w-3.5 h-3.5" />
-            <span>1. Personal Details</span>
+            <span>1. Personal Info</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('employment')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'employment'
-                ? 'bg-emerald-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-100'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
-            <span>2. Employment & Site</span>
+            <span>2. Position & Site Assignment</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('compensation')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'compensation'
-                ? 'bg-emerald-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-100'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
             <DollarSign className="w-3.5 h-3.5" />
-            <span>3. Compensation</span>
+            <span>3. Wage & Rate Structure</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('government')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'government'
-                ? 'bg-emerald-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-100'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -226,6 +238,52 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
                   <p className="text-xs">Site / Skilled Worker</p>
                   <p className="text-[10px] text-slate-500 font-normal">Carpenters, Masons, Plumbers, Foremen</p>
                 </button>
+              </div>
+            </div>
+
+            {/* Profile Photo Upload Widget */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center gap-4 text-xs">
+              <div className="relative shrink-0">
+                <img
+                  src={formData.profile_photo || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200'}
+                  alt="Avatar Preview"
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-slate-300 shadow-sm"
+                />
+              </div>
+              <div className="space-y-2 flex-1 text-center sm:text-left">
+                <label className="block font-bold text-slate-800">
+                  Profile Photo & ID Picture
+                </label>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <label className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Image</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <label className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Take Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="user"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <input
+                  type="url"
+                  value={formData.profile_photo}
+                  onChange={(e) => handleChange('profile_photo', e.target.value)}
+                  placeholder="Or paste image URL (https://...)"
+                  className="w-full p-2 rounded-lg border border-slate-200 text-[11px] bg-white text-slate-700"
+                />
               </div>
             </div>
 

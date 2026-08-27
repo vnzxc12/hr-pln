@@ -160,6 +160,21 @@ export const EmployeeProfilePage = () => {
     }
   };
 
+  // Quick Photo Change Handler
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result;
+        dataService.updateEmployee(employee.id, { profile_photo: base64 }, currentUser);
+        showToast('Profile photo updated successfully.', 'success');
+        loadData();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-16">
       {/* Back Button */}
@@ -168,18 +183,36 @@ export const EmployeeProfilePage = () => {
         className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-emerald-800 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span>Back to Employee Roster</span>
+        <span>Back to Workforce Directory</span>
       </button>
 
-      {/* MASTER PROFILE HEADER BANNER */}
+      {/* MASTER PROFILE HEADER HERO CARD */}
       <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-subtle relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
-            <img
-              src={employee.profile_photo || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200'}
-              alt={employee.first_name}
-              className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-4 border-slate-100 shadow-card"
-            />
+        <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
+          <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+            <div className="relative group shrink-0">
+              <img
+                src={employee.profile_photo || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300'}
+                alt={employee.first_name}
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-4 border-slate-100 shadow-card"
+              />
+              {canManageEmployees && (
+                <label
+                  htmlFor="profile-photo-direct-upload"
+                  className="absolute inset-0 bg-slate-950/60 rounded-3xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-bold gap-1 backdrop-blur-xs"
+                >
+                  <Camera className="w-5 h-5 text-emerald-300" />
+                  <span>Change Photo</span>
+                </label>
+              )}
+              <input
+                id="profile-photo-direct-upload"
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
+            </div>
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">

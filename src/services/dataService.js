@@ -672,6 +672,14 @@ export const dataService = {
     return departments.find(d => d.id === id);
   },
 
+  deleteDepartment(id, user) {
+    const target = departments.find(d => d.id === id);
+    departments = departments.filter(d => d.id !== id);
+    saveToStorage('departments', departments);
+    this.logAudit(user?.name, user?.role, `Deleted department ${target?.name || id}`, 'Settings', id);
+    return true;
+  },
+
   getDesignations() {
     return [...designations];
   },
@@ -689,6 +697,42 @@ export const dataService = {
     saveToStorage('designations', designations);
     this.logAudit(user?.name, user?.role, `Updated designation ID ${id}`, 'Settings', id);
     return designations.find(d => d.id === id);
+  },
+
+  deleteDesignation(id, user) {
+    const target = designations.find(d => d.id === id);
+    designations = designations.filter(d => d.id !== id);
+    saveToStorage('designations', designations);
+    this.logAudit(user?.name, user?.role, `Deleted designation ${target?.title || id}`, 'Settings', id);
+    return true;
+  },
+
+  // --- GOVERNMENT CONTRIBUTION RULES CRUD ---
+  getGovernmentRules() {
+    return [...governmentRules];
+  },
+
+  createGovernmentRule(ruleData, user) {
+    const newRule = { ...ruleData, id: `gov-rule-${Date.now()}` };
+    governmentRules = [...governmentRules, newRule];
+    saveToStorage('gov_rules', governmentRules);
+    this.logAudit(user?.name, user?.role, `Created contribution rule: ${newRule.rule_name}`, 'Settings', newRule.id);
+    return newRule;
+  },
+
+  updateGovernmentRule(id, updates, user) {
+    governmentRules = governmentRules.map(r => r.id === id ? { ...r, ...updates } : r);
+    saveToStorage('gov_rules', governmentRules);
+    this.logAudit(user?.name, user?.role, `Updated contribution rule ID ${id}`, 'Settings', id);
+    return governmentRules.find(r => r.id === id);
+  },
+
+  deleteGovernmentRule(id, user) {
+    const target = governmentRules.find(r => r.id === id);
+    governmentRules = governmentRules.filter(r => r.id !== id);
+    saveToStorage('gov_rules', governmentRules);
+    this.logAudit(user?.name, user?.role, `Deleted contribution rule ${target?.rule_name || id}`, 'Settings', id);
+    return true;
   },
 
   getCompanySettings() {
