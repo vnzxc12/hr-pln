@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans min-h-screen antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight text-slate-900;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Construction Grid subtle background */
+.bg-grid-pattern {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+}
+
+/* Print specific styles for Payslips and Reports */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-break-inside-avoid {
+    break-inside: avoid;
+  }
+}

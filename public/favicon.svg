@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" fill="none">
+  <defs>
+    <linearGradient id="fav-dark-green" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#042f2e" />
+      <stop offset="50%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <linearGradient id="fav-bright-green" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#86efac" />
+      <stop offset="40%" stop-color="#22c55e" />
+      <stop offset="100%" stop-color="#15803d" />
+    </linearGradient>
+    <linearGradient id="fav-deep-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a" />
+      <stop offset="40%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="fav-azure-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="60%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="fav-silver-1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f1f5f9" />
+      <stop offset="35%" stop-color="#cbd5e1" />
+      <stop offset="70%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#64748b" />
+    </linearGradient>
+    <linearGradient id="fav-silver-2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e2e8f0" />
+      <stop offset="50%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#475569" />
+    </linearGradient>
+  </defs>
+
+  <rect width="500" height="500" rx="90" fill="#0f172a"/>
+  
+  <g transform="translate(15, 10) scale(0.94)">
+    <polygon points="250,42 75,188 116,242 250,132" fill="url(#fav-dark-green)" />
+    <polygon points="250,42 425,188 384,242 250,132" fill="url(#fav-bright-green)" />
+    <polygon points="84,260 216,358 322,425 210,425 106,346 160,425 84,425" fill="url(#fav-deep-blue)" />
+    <polygon points="84,260 168,322 135,425 84,425" fill="#1e3a8a" />
+    <polygon points="372,238 416,268 320,425 272,425" fill="url(#fav-azure-blue)" />
+    <polygon points="250,140 330,202 290,262 255,235 278,202 225,160" fill="url(#fav-silver-1)" />
+    <polygon points="145,225 265,140 335,195 190,305" fill="url(#fav-silver-2)" />
+    <polygon points="155,285 305,395 345,340 195,230" fill="url(#fav-silver-1)" />
+    <polygon points="190,370 270,425 190,425" fill="#475569" />
+  </g>
+</svg>
