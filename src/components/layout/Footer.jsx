@@ -7,46 +7,53 @@ export const Footer = () => {
 
   return (
     <>
-      <footer className="mt-auto border-t border-slate-200/80 bg-white/70 backdrop-blur-sm py-6 px-6 sm:px-8 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <footer className="sticky bottom-0 z-20 border-t border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md py-3.5 px-4 sm:px-8 text-xs text-slate-500 dark:text-slate-400 transition-colors shadow-2xs">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-center sm:text-left">
           {/* Left: Branding info */}
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left">
-            <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-              <Building2 className="w-4 h-4 text-emerald-600" />
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-2.5">
+            <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+              <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Project Lunayve Construction</span>
             </div>
-            <span className="hidden sm:inline text-slate-300">•</span>
-            <span className="text-slate-500">Human Resource Management System</span>
-            <span className="hidden sm:inline text-slate-300">•</span>
-            <span className="text-slate-600 font-medium">A product by VCS Technologies</span>
+            <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
+            <span className="text-slate-500 dark:text-slate-400 hidden lg:inline">HRMS Enterprise</span>
+            <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
+            <span className="inline-flex items-center gap-1">
+              <span>Developed by</span>
+              <span className="font-extrabold bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 dark:from-emerald-400 dark:to-teal-300 bg-clip-text text-transparent tracking-wide">
+                VCS Technologies
+              </span>
+            </span>
           </div>
 
           {/* Right: Copyright & Links */}
-          <div className="flex flex-wrap items-center justify-center gap-4 text-slate-500">
-            <span>© 2026 VCS Technologies. All rights reserved.</span>
-            <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3.5 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+            <span>
+              © 2026 <strong className="font-bold text-emerald-700 dark:text-emerald-400">VCS Technologies</strong>. All rights reserved.
+            </span>
+            <div className="flex items-center gap-2.5">
               <button
                 onClick={() => setActiveModal('privacy')}
-                className="hover:text-emerald-700 hover:underline transition-colors flex items-center gap-1"
+                className="hover:text-emerald-700 dark:hover:text-emerald-400 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
               >
-                <Shield className="w-3.5 h-3.5" />
-                <span>Privacy Policy</span>
+                <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Privacy</span>
               </button>
-              <span className="text-slate-300">•</span>
+              <span className="text-slate-300 dark:text-slate-700">•</span>
               <button
                 onClick={() => setActiveModal('terms')}
-                className="hover:text-emerald-700 hover:underline transition-colors flex items-center gap-1"
+                className="hover:text-emerald-700 dark:hover:text-emerald-400 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
               >
-                <FileText className="w-3.5 h-3.5" />
+                <FileText className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                 <span>Terms</span>
               </button>
-              <span className="text-slate-300">•</span>
+              <span className="text-slate-300 dark:text-slate-700">•</span>
               <button
                 onClick={() => setActiveModal('help')}
-                className="hover:text-emerald-700 hover:underline transition-colors flex items-center gap-1"
+                className="hover:text-emerald-700 dark:hover:text-emerald-400 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
               >
-                <HelpCircle className="w-3.5 h-3.5" />
-                <span>Help & Support</span>
+                <HelpCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Support</span>
               </button>
             </div>
           </div>

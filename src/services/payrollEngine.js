@@ -97,33 +97,46 @@ export const computeEmployeePayroll = (employee, attendanceStats, rules = [], pe
     dailyRate = hourlyRate * 8;
   }
 
-  // Attendance metrics
-  const daysWorked = Number(attendanceStats?.days_worked ?? (isMonthly ? (periodType === 'Semi-Monthly' ? 13 : 26) : 12));
+  // Attendance metrics (strictly from timesheets/attendance records)
+  const daysWorked = Number(attendanceStats?.days_worked ?? 0);
   const otHours = Number(attendanceStats?.overtime_hours ?? 0);
   const ndHours = Number(attendanceStats?.night_diff_hours ?? 0);
   const holidayHours = Number(attendanceStats?.holiday_hours ?? 0);
   const restDayHours = Number(attendanceStats?.rest_day_hours ?? 0);
   const lateMinutes = Number(attendanceStats?.late_minutes ?? 0);
 
-  // Earnings calculations
+  // Standard period working days (Semi-Monthly: 13 days; Monthly: 26 days)
+  const standardDays = periodType === 'Semi-Monthly' ? 13 : 26;
+
+  // Earnings calculations - Zero pay if zero days worked
   let basicPay = 0;
-  if (isMonthly) {
-    basicPay = periodType === 'Semi-Monthly' ? baseRate / 2 : baseRate;
-  } else {
-    basicPay = dailyRate * daysWorked;
+  if (daysWorked > 0) {
+    if (isMonthly) {
+      if (daysWorked >= standardDays) {
+        basicPay = periodType === 'Semi-Monthly' ? baseRate / 2 : baseRate;
+      } else {
+        // Prorated by actual days logged on timesheets
+        basicPay = Math.round(dailyRate * daysWorked * 100) / 100;
+      }
+    } else {
+      basicPay = Math.round(dailyRate * daysWorked * 100) / 100;
+    }
   }
 
-  const overtimePay = Math.round(otHours * (hourlyRate * 1.25) * 100) / 100;
-  const nightDiffPay = Math.round(ndHours * (hourlyRate * 0.10) * 100) / 100;
-  const holidayPay = Math.round(holidayHours * (hourlyRate * 1.30) * 100) / 100;
-  const restDayPay = Math.round(restDayHours * (hourlyRate * 1.30) * 100) / 100;
-  const lateDeduction = Math.round(lateMinutes * (hourlyRate / 60) * 100) / 100;
+  const overtimePay = daysWorked > 0 ? Math.round(otHours * (hourlyRate * 1.25) * 100) / 100 : 0;
+  const nightDiffPay = daysWorked > 0 ? Math.round(ndHours * (hourlyRate * 0.10) * 100) / 100 : 0;
+  const holidayPay = daysWorked > 0 ? Math.round(holidayHours * (hourlyRate * 1.30) * 100) / 100 : 0;
+  const restDayPay = daysWorked > 0 ? Math.round(restDayHours * (hourlyRate * 1.30) * 100) / 100 : 0;
+  const lateDeduction = daysWorked > 0 ? Math.round(lateMinutes * (hourlyRate / 60) * 100) / 100 : 0;
 
   const monthlyAllowance = Number(employee.monthly_allowance || 0);
   const dailyAllowance = Number(employee.daily_allowance || 0);
-  const totalAllowances = isMonthly ? (monthlyAllowance / 2) : (dailyAllowance * daysWorked);
-  const bonuses = Number(attendanceStats?.bonus || 0);
-  const otherEarnings = Number(attendanceStats?.other_earnings || 0);
+  const totalAllowances = daysWorked > 0
+    ? (isMonthly ? Math.round((monthlyAllowance / 2) * Math.min(1, daysWorked / standardDays) * 100) / 100 : (dailyAllowance * daysWorked))
+    : 0;
+
+  const bonuses = daysWorked > 0 ? Number(attendanceStats?.bonus || 0) : 0;
+  const otherEarnings = daysWorked > 0 ? Number(attendanceStats?.other_earnings || 0) : 0;
 
   const grossPay = Math.max(
     0,
@@ -137,28 +150,44 @@ export const computeEmployeePayroll = (employee, attendanceStats, rules = [], pe
   const isSemi = periodType === 'Semi-Monthly';
   const divisor = isSemi ? 2 : 1;
 
-  const sss = calculateSSS(estimatedMonthlyGross, rules);
-  const philhealth = calculatePhilHealth(estimatedMonthlyGross, rules);
-  const pagibig = calculatePagIBIG(estimatedMonthlyGross, rules);
+  let sssEE = 0;
+  let sssER = 0;
+  let phEE = 0;
+  let phER = 0;
+  let hdmfEE = 0;
+  let hdmfER = 0;
+  let statutoryDeductions = 0;
+  let withholdingTax = 0;
+  let employeeLoans = 0;
+  let cashAdvances = 0;
+  let otherDeductions = 0;
+  let totalDeductions = 0;
+  let netPay = 0;
 
-  const sssEE = Math.round((sss.employee / divisor) * 100) / 100;
-  const sssER = Math.round((sss.employer / divisor) * 100) / 100;
-  const phEE = Math.round((philhealth.employee / divisor) * 100) / 100;
-  const phER = Math.round((philhealth.employer / divisor) * 100) / 100;
-  const hdmfEE = Math.round((pagibig.employee / divisor) * 100) / 100;
-  const hdmfER = Math.round((pagibig.employer / divisor) * 100) / 100;
+  // If employee has zero earnings (no timesheet), zero deductions and zero net pay
+  if (grossPay > 0) {
+    const sss = calculateSSS(estimatedMonthlyGross, rules);
+    const philhealth = calculatePhilHealth(estimatedMonthlyGross, rules);
+    const pagibig = calculatePagIBIG(estimatedMonthlyGross, rules);
 
-  // Taxable Income = Gross - Mandatory Statutory Contributions
-  const statutoryDeductions = sssEE + phEE + hdmfEE;
-  const taxableIncome = Math.max(0, grossPay - statutoryDeductions);
-  const withholdingTax = calculateWithholdingTax(taxableIncome, rules);
+    sssEE = Math.round((sss.employee / divisor) * 100) / 100;
+    sssER = Math.round((sss.employer / divisor) * 100) / 100;
+    phEE = Math.round((philhealth.employee / divisor) * 100) / 100;
+    phER = Math.round((philhealth.employer / divisor) * 100) / 100;
+    hdmfEE = Math.round((pagibig.employee / divisor) * 100) / 100;
+    hdmfER = Math.round((pagibig.employer / divisor) * 100) / 100;
 
-  const employeeLoans = Number(attendanceStats?.loans || 0);
-  const cashAdvances = Number(attendanceStats?.cash_advances || 0);
-  const otherDeductions = Number(attendanceStats?.other_deductions || 0);
+    statutoryDeductions = sssEE + phEE + hdmfEE;
+    const taxableIncome = Math.max(0, grossPay - statutoryDeductions);
+    withholdingTax = calculateWithholdingTax(taxableIncome, rules);
 
-  const totalDeductions = Math.round((statutoryDeductions + withholdingTax + employeeLoans + cashAdvances + otherDeductions) * 100) / 100;
-  const netPay = Math.max(0, Math.round((grossPay - totalDeductions) * 100) / 100);
+    employeeLoans = Number(attendanceStats?.loans || 0);
+    cashAdvances = Number(attendanceStats?.cash_advances || 0);
+    otherDeductions = Number(attendanceStats?.other_deductions || 0);
+
+    totalDeductions = Math.min(grossPay, Math.round((statutoryDeductions + withholdingTax + employeeLoans + cashAdvances + otherDeductions) * 100) / 100);
+    netPay = Math.max(0, Math.round((grossPay - totalDeductions) * 100) / 100);
+  }
 
   return {
     employee_id: employee.id,

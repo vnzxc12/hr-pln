@@ -324,7 +324,7 @@ export const LoginPage = () => {
           Project Lunayve • Human Resource Management System
         </p>
         <p className="text-[11px]">
-          A product by <span className="font-bold text-slate-800">VCS Technologies</span> • © 2026 VCS Technologies. All rights reserved.
+          Developed by <span className="font-extrabold bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-600 bg-clip-text text-transparent tracking-wide">VCS Technologies</span> • © 2026 <strong className="font-bold text-emerald-800">VCS Technologies</strong>. All rights reserved.
         </p>
         <div className="flex items-center justify-center gap-3 pt-1 text-[11px] text-slate-500">
           <button

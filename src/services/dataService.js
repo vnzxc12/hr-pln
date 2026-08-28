@@ -1158,6 +1158,57 @@ export const dataService = {
     return payrollPeriods.find(p => p.id === id);
   },
 
+  getEmployeeAttendanceStatsForPeriod(employeeId, startDate, endDate) {
+    const emp = employees.find(e => e.id === employeeId || e.employee_id === employeeId);
+    const validIds = [employeeId];
+    if (emp) {
+      if (emp.id && !validIds.includes(emp.id)) validIds.push(emp.id);
+      if (emp.employee_id && !validIds.includes(emp.employee_id)) validIds.push(emp.employee_id);
+    }
+
+    const periodLogs = attendanceLogs.filter(a => {
+      if (!validIds.includes(a.employee_id)) return false;
+      if (startDate && a.date < startDate) return false;
+      if (endDate && a.date > endDate) return false;
+      return true;
+    });
+
+    let daysWorked = 0;
+    let otHours = 0;
+    let ndHours = 0;
+    let holidayHours = 0;
+    let restDayHours = 0;
+    let lateMinutes = 0;
+    let undertimeMinutes = 0;
+
+    periodLogs.forEach(log => {
+      const status = log.status || 'Present';
+      if (['Present', 'Late', 'Site Duty'].includes(status)) {
+        daysWorked += 1;
+      } else if (status === 'Half Day') {
+        daysWorked += 0.5;
+      }
+
+      otHours += Number(log.overtime_hours) || 0;
+      ndHours += Number(log.night_diff_hours) || 0;
+      holidayHours += Number(log.holiday_hours) || 0;
+      restDayHours += Number(log.rest_day_hours) || 0;
+      lateMinutes += Number(log.late_minutes) || 0;
+      undertimeMinutes += Number(log.undertime_minutes) || 0;
+    });
+
+    return {
+      days_worked: daysWorked,
+      overtime_hours: otHours,
+      night_diff_hours: ndHours,
+      holiday_hours: holidayHours,
+      rest_day_hours: restDayHours,
+      late_minutes: lateMinutes,
+      undertime_minutes: undertimeMinutes,
+      logs_count: periodLogs.length
+    };
+  },
+
   createPayrollPeriod(periodData, user) {
     const periodId = generateUUID();
     const newPeriod = {
@@ -1173,12 +1224,10 @@ export const dataService = {
 
     const activeEmployees = employees.filter(e => !e.is_deleted && e.employment_status === 'Active');
     const generatedRecords = activeEmployees.map(emp => {
+      const attStats = this.getEmployeeAttendanceStatsForPeriod(emp.id, newPeriod.start_date, newPeriod.end_date);
       const calc = computeEmployeePayroll(
         emp,
-        {
-          days_worked: emp.workforce_category === 'office' ? 13 : 12,
-          overtime_hours: emp.workforce_category === 'site' ? 6 : 0
-        },
+        attStats,
         governmentRules,
         newPeriod.period_type
       );
@@ -1225,13 +1274,76 @@ export const dataService = {
     this.logAudit(
       user?.name,
       user?.role,
-      `Generated payroll period ${newPeriod.period_code}`,
+      `Generated payroll period ${newPeriod.period_code} from attendance timesheets`,
       'Payroll',
       newPeriod.id,
       { count: activeEmployees.length, net: totalNet }
     );
 
     return newPeriod;
+  },
+
+  recalculatePayrollPeriod(periodId, user) {
+    const period = payrollPeriods.find(p => p.id === periodId);
+    if (!period) return null;
+
+    const activeEmployees = employees.filter(e => !e.is_deleted && e.employment_status === 'Active');
+    
+    // Filter out old records for this period
+    payrollRecords = payrollRecords.filter(r => r.payroll_period_id !== periodId);
+
+    const generatedRecords = activeEmployees.map(emp => {
+      const attStats = this.getEmployeeAttendanceStatsForPeriod(emp.id, period.start_date, period.end_date);
+      const calc = computeEmployeePayroll(
+        emp,
+        attStats,
+        governmentRules,
+        period.period_type
+      );
+      return {
+        ...calc,
+        id: generateUUID(),
+        payroll_period_id: periodId,
+        employee_id: emp.id,
+        workforce_category: emp.workforce_category,
+        rate_type: emp.rate_type,
+        base_rate: Number(emp.base_rate) || 0,
+        status: period.status || 'Draft',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    });
+
+    const totalGross = generatedRecords.reduce((acc, r) => acc + (Number(r.gross_pay) || 0), 0);
+    const totalDeductions = generatedRecords.reduce((acc, r) => acc + (Number(r.total_deductions) || 0), 0);
+    const totalNet = generatedRecords.reduce((acc, r) => acc + (Number(r.net_pay) || 0), 0);
+
+    period.total_gross = totalGross;
+    period.total_deductions = totalDeductions;
+    period.total_net = totalNet;
+    period.updated_at = new Date().toISOString();
+
+    payrollRecords = [...payrollRecords, ...generatedRecords];
+
+    saveToStorage('payroll_periods', payrollPeriods);
+    saveToStorage('payroll_records', payrollRecords);
+    notifySubscribers('payroll');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('payroll_periods').upsert([period], { onConflict: 'id' }).then(({ error }) => {
+        if (error) console.warn('Supabase update period error:', error);
+      });
+      supabase.from('payroll_records').delete().eq('payroll_period_id', periodId).then(() => {
+        if (generatedRecords.length > 0) {
+          supabase.from('payroll_records').insert(generatedRecords).then(({ error }) => {
+            if (error) console.warn('Supabase sync payroll records error:', error);
+          });
+        }
+      });
+    }
+
+    this.logAudit(user?.name, user?.role, `Recalculated payroll period ${period.period_code} from live timesheets`, 'Payroll', periodId);
+    return period;
   },
 
   getPayrollRecords(periodId) {

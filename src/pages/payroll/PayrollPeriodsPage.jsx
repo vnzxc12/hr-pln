@@ -10,7 +10,8 @@ import {
   Calendar,
   PieChart,
   ArrowRight,
-  TrendingUp
+  TrendingUp,
+  RefreshCw
 } from 'lucide-react';
 import PesoIcon from '../../components/common/PesoIcon';
 import { StatusBadge, WorkforceBadge } from '../../components/common/Badge';
@@ -60,6 +61,9 @@ export const PayrollPeriodsPage = () => {
   useEffect(() => {
     loadData();
     const unsubscribe = dataService.subscribe(loadData);
+    dataService.syncWithSupabase().then(() => {
+      loadData();
+    });
     return () => unsubscribe();
   }, []);
 
@@ -71,10 +75,20 @@ export const PayrollPeriodsPage = () => {
   const handleCreatePeriod = (e) => {
     e.preventDefault();
     const created = dataService.createPayrollPeriod(newPeriodData, currentUser);
-    showToast(`Payroll Period ${created.period_code} generated.`, 'success');
+    showToast(`Payroll Period ${created.period_code} generated from timesheet logs.`, 'success');
     setIsCreatePeriodModalOpen(false);
     loadData();
     handleSelectPeriod(created);
+  };
+
+  const handleRecalculatePeriod = () => {
+    if (!selectedPeriod) return;
+    const updated = dataService.recalculatePayrollPeriod(selectedPeriod.id, currentUser);
+    if (updated) {
+      showToast(`Payroll ${updated.period_code} recomputed from live timesheets.`, 'success');
+      loadData();
+      handleSelectPeriod(updated);
+    }
   };
 
   const handleStatusChange = (newStatus) => {
@@ -191,7 +205,18 @@ export const PayrollPeriodsPage = () => {
 
             {/* Workflow Action Buttons */}
             {canEditPayroll && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {selectedPeriod.status !== 'Paid' && (
+                  <button
+                    onClick={handleRecalculatePeriod}
+                    className="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+                    title="Recalculate employee basic pay and allowances from real attendance logs"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Sync Timesheets</span>
+                  </button>
+                )}
+
                 {selectedPeriod.status === 'Draft' && (
                   <button
                     onClick={() => handleStatusChange('For Review')}
@@ -211,7 +236,7 @@ export const PayrollPeriodsPage = () => {
                 )}
                 {selectedPeriod.status === 'Approved' && (
                   <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1 text-xs text-emerald-800 font-semibold">
+                    <span className="flex items-center gap-1 text-xs text-emerald-800 dark:text-emerald-400 font-semibold">
                       <Lock className="w-3.5 h-3.5" /> Locked & Approved
                     </span>
                     <button
