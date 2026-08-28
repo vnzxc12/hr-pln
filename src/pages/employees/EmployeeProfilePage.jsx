@@ -311,13 +311,11 @@ export const EmployeeProfilePage = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 flex items-center gap-2 whitespace-nowrap cursor-pointer select-none ${
-                isActive
-                  ? 'bg-emerald-900 text-white shadow-md border border-emerald-900 ring-2 ring-emerald-900/20'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 hover:shadow-xs active:scale-95'
+              className={`tab-pill px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap ${
+                isActive ? 'tab-pill-active' : 'tab-pill-inactive'
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-emerald-300' : 'text-slate-400'}`} />
+              <Icon className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-emerald-300' : 'text-slate-500'}`} />
               <span>{tab.label}</span>
             </button>
           );

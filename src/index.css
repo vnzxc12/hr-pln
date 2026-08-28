@@ -26,6 +26,47 @@
   background: #94a3b8;
 }
 
+/* Guaranteed Interactive Navigation Tabs */
+.tab-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer !important;
+  user-select: none;
+}
+
+.tab-pill-inactive {
+  background-color: #ffffff !important;
+  color: #475569 !important;
+  border: 1.5px solid #e2e8f0 !important;
+}
+
+.tab-pill-inactive:hover {
+  background-color: #ecfdf5 !important;
+  color: #064e3b !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 4px 12px -1px rgba(16, 185, 129, 0.25) !important;
+  transform: translateY(-2px);
+}
+
+.tab-pill-inactive:active {
+  transform: translateY(0px) scale(0.97);
+}
+
+.tab-pill-active {
+  background-color: #064e3b !important;
+  color: #ffffff !important;
+  border: 1.5px solid #064e3b !important;
+  box-shadow: 0 4px 14px -2px rgba(6, 78, 59, 0.4) !important;
+}
+
+.tab-pill-active:hover {
+  background-color: #022c22 !important;
+  border-color: #022c22 !important;
+  transform: translateY(-1px);
+}
+
 /* Construction Grid subtle background */
 .bg-grid-pattern {
   background-size: 24px 24px;

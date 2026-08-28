@@ -183,10 +183,8 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
           <button
             type="button"
             onClick={() => setActiveTab('personal')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
-              activeTab === 'personal'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 hover:shadow-2xs active:scale-95'
+            className={`tab-pill px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${
+              activeTab === 'personal' ? 'tab-pill-active' : 'tab-pill-inactive'
             }`}
           >
             <User className="w-3.5 h-3.5" />
@@ -195,10 +193,8 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
           <button
             type="button"
             onClick={() => setActiveTab('employment')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
-              activeTab === 'employment'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 hover:shadow-2xs active:scale-95'
+            className={`tab-pill px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${
+              activeTab === 'employment' ? 'tab-pill-active' : 'tab-pill-inactive'
             }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
@@ -207,10 +203,8 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
           <button
             type="button"
             onClick={() => setActiveTab('compensation')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
-              activeTab === 'compensation'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 hover:shadow-2xs active:scale-95'
+            className={`tab-pill px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${
+              activeTab === 'compensation' ? 'tab-pill-active' : 'tab-pill-inactive'
             }`}
           >
             <DollarSign className="w-3.5 h-3.5" />
@@ -219,10 +213,8 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
           <button
             type="button"
             onClick={() => setActiveTab('government')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
-              activeTab === 'government'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 hover:shadow-2xs active:scale-95'
+            className={`tab-pill px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${
+              activeTab === 'government' ? 'tab-pill-active' : 'tab-pill-inactive'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
