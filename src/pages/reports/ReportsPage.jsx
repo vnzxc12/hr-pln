@@ -170,14 +170,6 @@ export const ReportsPage = () => {
             >
               <Icon className={`w-3.5 h-3.5 transition-colors duration-200 ease-in-out ${isActive ? 'text-emerald-300' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-800 dark:group-hover:text-slate-200'}`} />
               <span>{tab.label}</span>
-              {/* Below Hover & Active Indicator Bar */}
-              <span
-                className={`absolute -bottom-3 left-2 right-2 h-1 rounded-full transition-all duration-200 ease-in-out ${
-                  isActive
-                    ? 'bg-emerald-600 dark:bg-emerald-400 opacity-100 shadow-xs'
-                    : 'bg-transparent group-hover:bg-slate-300 dark:group-hover:bg-slate-600 group-hover:opacity-100 opacity-0'
-                }`}
-              />
             </button>
           );
         })}
