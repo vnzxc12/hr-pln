@@ -39,9 +39,63 @@ const sanitizeUUID = (val) => {
   return uuidPattern.test(trimmed) ? trimmed : null;
 };
 
+// Whitelist of valid PostgreSQL columns in employees table
+const DB_EMPLOYEE_COLUMNS = [
+  'id',
+  'employee_id',
+  'first_name',
+  'middle_name',
+  'last_name',
+  'suffix',
+  'profile_photo',
+  'workforce_category',
+  'date_of_birth',
+  'gender',
+  'civil_status',
+  'nationality',
+  'contact_number',
+  'email',
+  'address',
+  'emergency_contact_name',
+  'emergency_contact_number',
+  'emergency_contact_relation',
+  'employment_type',
+  'employment_status',
+  'department_id',
+  'designation_id',
+  'date_hired',
+  'contract_start_date',
+  'contract_end_date',
+  'assigned_project_id',
+  'assigned_site_id',
+  'supervisor_id',
+  'foreman_id',
+  'team_crew',
+  'date_assigned',
+  'sss_number',
+  'philhealth_number',
+  'pagibig_number',
+  'tin_number',
+  'other_gov_info',
+  'rate_type',
+  'base_rate',
+  'monthly_allowance',
+  'daily_allowance',
+  'is_deleted',
+  'created_at',
+  'updated_at'
+];
+
 // PostgreSQL Schema Sanitizer for Employee Records
 const sanitizeEmployeeForDB = (data) => {
-  const sanitized = { ...data };
+  const sanitized = {};
+
+  // Copy ONLY columns that actually exist in the database table
+  DB_EMPLOYEE_COLUMNS.forEach(col => {
+    if (col in data) {
+      sanitized[col] = data[col];
+    }
+  });
 
   // Foreign keys / UUID fields
   if ('department_id' in sanitized) sanitized.department_id = sanitizeUUID(sanitized.department_id);
@@ -52,40 +106,43 @@ const sanitizeEmployeeForDB = (data) => {
   if ('foreman_id' in sanitized) sanitized.foreman_id = sanitizeUUID(sanitized.foreman_id);
 
   // String fields: convert empty strings to null or defaults
-  if (sanitized.first_name !== undefined) sanitized.first_name = sanitized.first_name?.trim() || '';
-  if (sanitized.last_name !== undefined) sanitized.last_name = sanitized.last_name?.trim() || '';
-  if (sanitized.middle_name !== undefined) sanitized.middle_name = sanitized.middle_name?.trim() || null;
-  if (sanitized.suffix !== undefined) sanitized.suffix = sanitized.suffix?.trim() || null;
-  if (sanitized.email !== undefined) sanitized.email = sanitized.email?.trim() || null;
-  if (sanitized.address !== undefined) sanitized.address = sanitized.address?.trim() || null;
-  if (sanitized.date_of_birth !== undefined) sanitized.date_of_birth = sanitized.date_of_birth?.trim() || null;
-  if (sanitized.date_hired !== undefined) sanitized.date_hired = sanitized.date_hired?.trim() || new Date().toISOString().split('T')[0];
-  if (sanitized.contract_start_date !== undefined) sanitized.contract_start_date = sanitized.contract_start_date?.trim() || null;
-  if (sanitized.contract_end_date !== undefined) sanitized.contract_end_date = sanitized.contract_end_date?.trim() || null;
-  if (sanitized.date_assigned !== undefined) sanitized.date_assigned = sanitized.date_assigned?.trim() || null;
-  if (sanitized.emergency_contact_name !== undefined) sanitized.emergency_contact_name = sanitized.emergency_contact_name?.trim() || null;
-  if (sanitized.emergency_contact_number !== undefined) sanitized.emergency_contact_number = sanitized.emergency_contact_number?.trim() || null;
-  if (sanitized.emergency_contact_relation !== undefined) sanitized.emergency_contact_relation = sanitized.emergency_contact_relation?.trim() || null;
+  if ('first_name' in sanitized) sanitized.first_name = sanitized.first_name?.trim() || '';
+  if ('last_name' in sanitized) sanitized.last_name = sanitized.last_name?.trim() || '';
+  if ('middle_name' in sanitized) sanitized.middle_name = sanitized.middle_name?.trim() || null;
+  if ('suffix' in sanitized) sanitized.suffix = sanitized.suffix?.trim() || null;
+  if ('email' in sanitized) {
+    const trimmed = sanitized.email?.trim();
+    sanitized.email = trimmed && trimmed.length > 0 ? trimmed : null;
+  }
+  if ('address' in sanitized) sanitized.address = sanitized.address?.trim() || null;
+  if ('date_of_birth' in sanitized) sanitized.date_of_birth = sanitized.date_of_birth?.trim() || null;
+  if ('date_hired' in sanitized) sanitized.date_hired = sanitized.date_hired?.trim() || new Date().toISOString().split('T')[0];
+  if ('contract_start_date' in sanitized) sanitized.contract_start_date = sanitized.contract_start_date?.trim() || null;
+  if ('contract_end_date' in sanitized) sanitized.contract_end_date = sanitized.contract_end_date?.trim() || null;
+  if ('date_assigned' in sanitized) sanitized.date_assigned = sanitized.date_assigned?.trim() || null;
+  if ('emergency_contact_name' in sanitized) sanitized.emergency_contact_name = sanitized.emergency_contact_name?.trim() || null;
+  if ('emergency_contact_number' in sanitized) sanitized.emergency_contact_number = sanitized.emergency_contact_number?.trim() || null;
+  if ('emergency_contact_relation' in sanitized) sanitized.emergency_contact_relation = sanitized.emergency_contact_relation?.trim() || null;
 
   // Statutory numbers
-  if (sanitized.sss_number !== undefined) sanitized.sss_number = sanitized.sss_number?.trim() || null;
-  if (sanitized.philhealth_number !== undefined) sanitized.philhealth_number = sanitized.philhealth_number?.trim() || null;
-  if (sanitized.pagibig_number !== undefined) sanitized.pagibig_number = sanitized.pagibig_number?.trim() || null;
-  if (sanitized.tin_number !== undefined) sanitized.tin_number = sanitized.tin_number?.trim() || null;
+  if ('sss_number' in sanitized) sanitized.sss_number = sanitized.sss_number?.trim() || null;
+  if ('philhealth_number' in sanitized) sanitized.philhealth_number = sanitized.philhealth_number?.trim() || null;
+  if ('pagibig_number' in sanitized) sanitized.pagibig_number = sanitized.pagibig_number?.trim() || null;
+  if ('tin_number' in sanitized) sanitized.tin_number = sanitized.tin_number?.trim() || null;
 
   // Defaults
-  if (sanitized.gender !== undefined) sanitized.gender = sanitized.gender?.trim() || 'Male';
-  if (sanitized.civil_status !== undefined) sanitized.civil_status = sanitized.civil_status?.trim() || 'Single';
-  if (sanitized.nationality !== undefined) sanitized.nationality = sanitized.nationality?.trim() || 'Filipino';
-  if (sanitized.employment_type !== undefined) sanitized.employment_type = sanitized.employment_type?.trim() || 'Regular';
-  if (sanitized.employment_status !== undefined) sanitized.employment_status = sanitized.employment_status?.trim() || 'Active';
-  if (sanitized.workforce_category !== undefined) sanitized.workforce_category = sanitized.workforce_category || 'site';
-  if (sanitized.rate_type !== undefined) sanitized.rate_type = sanitized.rate_type || 'Daily';
+  if ('gender' in sanitized) sanitized.gender = sanitized.gender?.trim() || 'Male';
+  if ('civil_status' in sanitized) sanitized.civil_status = sanitized.civil_status?.trim() || 'Single';
+  if ('nationality' in sanitized) sanitized.nationality = sanitized.nationality?.trim() || 'Filipino';
+  if ('employment_type' in sanitized) sanitized.employment_type = sanitized.employment_type?.trim() || 'Regular';
+  if ('employment_status' in sanitized) sanitized.employment_status = sanitized.employment_status?.trim() || 'Active';
+  if ('workforce_category' in sanitized) sanitized.workforce_category = sanitized.workforce_category || 'site';
+  if ('rate_type' in sanitized) sanitized.rate_type = sanitized.rate_type || 'Daily';
 
   // Numbers
-  if (sanitized.base_rate !== undefined) sanitized.base_rate = Number(sanitized.base_rate) || 0;
-  if (sanitized.monthly_allowance !== undefined) sanitized.monthly_allowance = Number(sanitized.monthly_allowance) || 0;
-  if (sanitized.daily_allowance !== undefined) sanitized.daily_allowance = Number(sanitized.daily_allowance) || 0;
+  if ('base_rate' in sanitized) sanitized.base_rate = Number(sanitized.base_rate) || 0;
+  if ('monthly_allowance' in sanitized) sanitized.monthly_allowance = Number(sanitized.monthly_allowance) || 0;
+  if ('daily_allowance' in sanitized) sanitized.daily_allowance = Number(sanitized.daily_allowance) || 0;
 
   return sanitized;
 };

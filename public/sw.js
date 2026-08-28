@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lunayve-hrms-v14';
+const CACHE_NAME = 'lunayve-hrms-v15';
 
 const STATIC_ASSETS = [
   '/',
@@ -26,15 +26,16 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Network-first strategy to always serve the latest production code
+// Network-first strategy for app shell assets
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith('http')) return;
+  // Never intercept Supabase REST/Storage or external endpoints
+  if (event.request.url.includes('supabase.co') || event.request.url.includes('unsplash.com')) return;
 
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
-        // Cache successful responses
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -43,15 +44,19 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       })
-      .catch(() => {
-        // Fallback to cache when offline
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
+      .catch(async () => {
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        if (event.request.mode === 'navigate') {
+          const appShell = await caches.match('/index.html');
+          if (appShell) return appShell;
+        }
+        return new Response('Network request failed', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: new Headers({ 'Content-Type': 'text/plain' })
         });
       })
   );
