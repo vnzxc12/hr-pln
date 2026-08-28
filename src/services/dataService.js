@@ -499,7 +499,8 @@ export const dataService = {
         if (asg.employee_id === targetId && asg.status === 'Active') {
           const closed = { ...asg, status: 'Transferred', assignment_end: new Date().toISOString().split('T')[0] };
           if (isSupabaseConfigured && supabase) {
-            supabase.from('employee_site_assignments').update(closed).eq('id', asg.id).then();
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(asg.id);
+            if (isUUID) supabase.from('employee_site_assignments').update(closed).eq('id', asg.id).then();
           }
           return closed;
         }
@@ -527,17 +528,29 @@ export const dataService = {
     cleanUpdates.updated_at = new Date().toISOString();
 
     const updated = { ...existing, ...cleanUpdates };
-    employees = employees.map(e => (e.id === targetId ? updated : e));
+    employees = employees.map(e => (e.id === targetId || (existing.employee_id && e.employee_id === existing.employee_id) ? updated : e));
     saveToStorage('employees', employees);
     notifySubscribers('employees');
 
     // Async write to Supabase PostgreSQL cloud backend
     if (isSupabaseConfigured && supabase) {
-      supabase.from('employees').update(cleanUpdates).eq('id', targetId).then(({ data, error }) => {
+      const dbUpdates = { ...cleanUpdates };
+      delete dbUpdates.id; // Do not overwrite primary key
+
+      const isTargetUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+      const isParamUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+      const query = isTargetUUID
+        ? supabase.from('employees').update(dbUpdates).eq('id', targetId)
+        : isParamUUID
+        ? supabase.from('employees').update(dbUpdates).eq('id', id)
+        : supabase.from('employees').update(dbUpdates).eq('employee_id', existing.employee_id || id);
+
+      query.then(({ data, error }) => {
         if (error) {
           console.error('Supabase update employee error:', error);
         } else {
-          console.log('Supabase employee updated successfully:', targetId);
+          console.log('Supabase employee updated successfully:', targetId || existing.employee_id);
         }
       });
     }
@@ -564,7 +577,16 @@ export const dataService = {
     notifySubscribers('employees');
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('employees').update({ is_deleted: true, employment_status: 'Terminated', updated_at: new Date().toISOString() }).eq('id', targetId).then(({ error }) => {
+      const isTargetUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+      const isParamUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+      const query = isTargetUUID
+        ? supabase.from('employees').update({ is_deleted: true, employment_status: 'Terminated', updated_at: new Date().toISOString() }).eq('id', targetId)
+        : isParamUUID
+        ? supabase.from('employees').update({ is_deleted: true, employment_status: 'Terminated', updated_at: new Date().toISOString() }).eq('id', id)
+        : supabase.from('employees').update({ is_deleted: true, employment_status: 'Terminated', updated_at: new Date().toISOString() }).eq('employee_id', existing.employee_id || id);
+
+      query.then(({ error }) => {
         if (error) console.warn('Supabase delete employee error:', error);
       });
     }
