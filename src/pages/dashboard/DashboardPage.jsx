@@ -54,13 +54,14 @@ export const DashboardPage = () => {
     return () => unsubscribe();
   }, []);
 
-  // Workforce Metrics
-  const totalEmployees = employees.length;
-  const activeEmployees = employees.filter(e => e.employment_status === 'Active').length;
-  const officeEmployees = employees.filter(e => e.workforce_category === 'office').length;
-  const siteWorkers = employees.filter(e => e.workforce_category === 'site').length;
+  // Workforce Metrics (Strictly active, non-terminated employees)
+  const activeList = employees.filter(e => !e.is_deleted && e.employment_status === 'Active');
+  const totalEmployees = activeList.length;
+  const activeEmployees = activeList.length;
+  const officeEmployees = activeList.filter(e => e.workforce_category === 'office').length;
+  const siteWorkers = activeList.filter(e => e.workforce_category === 'site').length;
   const onLeaveEmployees = employees.filter(e => e.employment_status === 'On Leave').length;
-  const inactiveEmployees = employees.filter(e => ['Inactive', 'Terminated', 'Resigned'].includes(e.employment_status)).length;
+  const inactiveEmployees = employees.filter(e => e.is_deleted || ['Inactive', 'Terminated', 'Resigned'].includes(e.employment_status)).length;
 
   // Attendance Metrics for Today
   const presentToday = attendance.filter(a => a.status === 'Present').length || 18;

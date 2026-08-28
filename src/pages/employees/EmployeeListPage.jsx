@@ -136,6 +136,22 @@ export const EmployeeListPage = () => {
     return true;
   });
 
+  // Scope employees based on current status filter (e.g. Active by default, or Terminated, etc.)
+  const statusFilteredList = employees.filter(emp => {
+    if (selectedStatus === 'Active') {
+      return !emp.is_deleted && emp.employment_status === 'Active';
+    } else if (selectedStatus === 'Terminated') {
+      return emp.is_deleted || emp.employment_status === 'Terminated';
+    } else if (selectedStatus !== 'all') {
+      return emp.employment_status === selectedStatus;
+    }
+    return true;
+  });
+
+  const totalCount = statusFilteredList.length;
+  const officeCount = statusFilteredList.filter(e => e.workforce_category === 'office').length;
+  const siteCount = statusFilteredList.filter(e => e.workforce_category === 'site').length;
+
   return (
     <div className="space-y-6 pb-12">
       {/* Header Bar */}
@@ -187,7 +203,7 @@ export const EmployeeListPage = () => {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              All Workforce ({employees.length})
+              All Workforce ({totalCount})
             </button>
             <button
               onClick={() => setSelectedCategory('office')}
@@ -198,7 +214,7 @@ export const EmployeeListPage = () => {
               }`}
             >
               <Briefcase className="w-3.5 h-3.5" />
-              <span>Office / Professional ({employees.filter(e => e.workforce_category === 'office').length})</span>
+              <span>Office / Professional ({officeCount})</span>
             </button>
             <button
               onClick={() => setSelectedCategory('site')}
@@ -209,12 +225,12 @@ export const EmployeeListPage = () => {
               }`}
             >
               <HardHat className="w-3.5 h-3.5" />
-              <span>Site / Skilled Worker ({employees.filter(e => e.workforce_category === 'site').length})</span>
+              <span>Site / Skilled Worker ({siteCount})</span>
             </button>
           </div>
 
           <span className="text-xs text-slate-500">
-            Showing <strong className="text-slate-900">{filteredEmployees.length}</strong> of {employees.length} workers
+            Showing <strong className="text-slate-900">{filteredEmployees.length}</strong> of {totalCount} workers
           </span>
         </div>
 
