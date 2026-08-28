@@ -280,7 +280,7 @@ export const dataService = {
         { data: sbSiteAsgs, error: errSiteAsgs },
         { data: sbDocCats, error: errDocCats },
         { data: sbDocs, error: errDocs },
-        { data: sbAttendance, error: errAtt },
+        { data: sbAtt, error: errAtt },
         { data: sbLeaveTypes, error: errLeaveTypes },
         { data: sbLeaveReqs, error: errLeaveReqs },
         { data: sbGovRules, error: errGovRules },
