@@ -33,8 +33,9 @@ export const Header = ({ onMenuToggle }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
+    setIsUserMenuOpen(false);
     logout();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   return (

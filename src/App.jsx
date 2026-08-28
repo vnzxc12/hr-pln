@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
@@ -32,7 +33,7 @@ const ProtectedLayout = () => {
   const location = useLocation();
 
   if (!currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -92,18 +93,20 @@ const ProtectedLayout = () => {
 
 export function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/*" element={<ProtectedLayout />} />
-            </Routes>
-          </BrowserRouter>
-        </NotificationProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/*" element={<ProtectedLayout />} />
+              </Routes>
+            </BrowserRouter>
+          </NotificationProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
