@@ -165,7 +165,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
         {!isCollapsed && (
           <div className="p-4 border-t border-slate-800/80 bg-slate-950 text-[10px] text-slate-500 space-y-0.5">
             <p className="font-semibold text-slate-400">Project Lunayve v1.0</p>
-            <p>VCS Technologies</p>
+            <p className="text-emerald-400 font-medium">VCS Technologies</p>
           </div>
         )}
       </aside>
