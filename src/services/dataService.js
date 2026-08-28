@@ -49,20 +49,6 @@ const saveToStorage = (key, data) => {
     localStorage.setItem(`${STORAGE_KEY_PREFIX}${key}`, JSON.stringify(data));
   } catch (err) {
     console.warn(`Could not save ${key} to storage:`, err);
-    // Quota management: safely truncate large image data if localStorage is full
-    try {
-      if (key === 'employees' && Array.isArray(data)) {
-        const trimmed = data.map(emp => {
-          if (emp.profile_photo && typeof emp.profile_photo === 'string' && emp.profile_photo.startsWith('data:image') && emp.profile_photo.length > 50000) {
-            return { ...emp, profile_photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&fit=crop&q=80' };
-          }
-          return emp;
-        });
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${key}`, JSON.stringify(trimmed));
-      }
-    } catch (e) {
-      console.warn('Storage cleanup failed:', e);
-    }
   }
 };
 
