@@ -328,8 +328,8 @@ export const SettingsPage = () => {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
+      {/* Tabs with Scroll Track & Below Indicator Bar */}
+      <div className="tab-scroll-container flex items-center gap-2.5 pb-3 pt-1 border-b border-slate-200 dark:border-slate-800">
         {[
           { id: 'users', label: `User Accounts & Access (${users.length})`, icon: Users },
           { id: 'designations', label: `Designations (${designations.length})`, icon: Briefcase },
@@ -342,15 +342,24 @@ export const SettingsPage = () => {
           return (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 flex items-center gap-2 whitespace-nowrap cursor-pointer select-none ${
+              className={`tab-nav-btn group ${
                 isActive
-                  ? 'bg-emerald-900 dark:bg-emerald-700 text-white shadow-md border border-emerald-900 dark:border-emerald-700 ring-2 ring-emerald-900/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950/80 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-md hover:-translate-y-0.5 active:scale-95'
+                  ? 'bg-emerald-900 dark:bg-emerald-700 text-white shadow-md ring-2 ring-emerald-900/30 font-bold border border-emerald-800 dark:border-emerald-600'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-500 shadow-2xs hover:shadow-md'
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-emerald-300' : 'text-slate-500 dark:text-slate-400'}`} />
+              <Icon className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-emerald-300' : 'text-slate-500 dark:text-slate-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-400'}`} />
               <span>{tab.label}</span>
+              {/* Below Hover & Active Indicator Bar */}
+              <span
+                className={`absolute -bottom-3 left-2 right-2 h-1 rounded-full transition-all duration-200 ${
+                  isActive
+                    ? 'bg-emerald-600 dark:bg-emerald-400 opacity-100 shadow-xs'
+                    : 'bg-transparent group-hover:bg-emerald-400/80 group-hover:opacity-100 opacity-0'
+                }`}
+              />
             </button>
           );
         })}

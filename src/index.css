@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   body {
     @apply bg-slate-50 text-slate-900 font-sans min-h-screen antialiased transition-colors duration-200;
@@ -10,7 +12,7 @@
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar for whole page */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -26,45 +28,63 @@
   background: #94a3b8;
 }
 
-/* Guaranteed Interactive Navigation Tabs */
-.tab-pill {
+/* Dedicated Tab Horizontal Scrollbar ("Hover bar below") */
+.tab-scroll-container {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #10b981 #e2e8f0;
+  scroll-behavior: smooth;
+}
+
+.tab-scroll-container::-webkit-scrollbar {
+  height: 6px;
+}
+.tab-scroll-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 9999px;
+}
+.tab-scroll-container::-webkit-scrollbar-thumb {
+  background: #10b981;
+  border-radius: 9999px;
+  transition: background 0.2s;
+}
+.tab-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #059669;
+}
+
+/* Dark mode for tab scrollbar */
+.dark .tab-scroll-container {
+  scrollbar-color: #10b981 #1e293b;
+}
+.dark .tab-scroll-container::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+.dark .tab-scroll-container::-webkit-scrollbar-thumb {
+  background: #10b981;
+}
+
+/* Interactive Navigation Tabs */
+.tab-nav-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.625rem 1.125rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer !important;
   user-select: none;
+  position: relative;
 }
 
-.tab-pill-inactive {
-  background-color: #ffffff !important;
-  color: #475569 !important;
-  border: 1.5px solid #e2e8f0 !important;
+.tab-nav-btn:hover {
+  transform: translateY(-2px);
 }
 
-.tab-pill-inactive:hover {
-  background-color: #d1fae5 !important; /* emerald-100 */
-  color: #064e3b !important; /* emerald-900 */
-  border-color: #10b981 !important; /* emerald-500 */
-  box-shadow: 0 4px 14px -1px rgba(16, 185, 129, 0.3) !important;
-  transform: translateY(-2px) !important;
-}
-
-.tab-pill-inactive:active {
-  transform: translateY(0px) scale(0.97) !important;
-}
-
-.tab-pill-active {
-  background-color: #064e3b !important;
-  color: #ffffff !important;
-  border: 1.5px solid #064e3b !important;
-  box-shadow: 0 4px 14px -2px rgba(6, 78, 59, 0.4) !important;
-}
-
-.tab-pill-active:hover {
-  background-color: #022c22 !important;
-  border-color: #022c22 !important;
-  transform: translateY(-1px) !important;
+.tab-nav-btn:active {
+  transform: translateY(0px) scale(0.97);
 }
 
 /* Construction Grid subtle background */
@@ -76,7 +96,7 @@
 }
 
 /* ==========================================================================
-   COMPREHENSIVE DARK MODE THEME SPECIFICATIONS
+   COMPREHENSIVE DARK MODE THEME SYSTEM
    ========================================================================== */
 .dark {
   color-scheme: dark;
@@ -85,6 +105,84 @@
 .dark body {
   background-color: #020617 !important; /* slate-950 */
   color: #f8fafc !important;
+}
+
+/* Global Dark Mode Surface & Text Overrides */
+.dark .bg-white {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+.dark .bg-slate-50 {
+  background-color: #020617 !important;
+  color: #f8fafc !important;
+}
+
+.dark .bg-slate-100 {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+.dark .bg-slate-200 {
+  background-color: #334155 !important;
+}
+
+.dark .border-slate-200,
+.dark .border-slate-100,
+.dark .border-slate-300 {
+  border-color: #1e293b !important;
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+.dark .text-slate-700,
+.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-slate-500,
+.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+.dark table {
+  color: #f1f5f9 !important;
+}
+
+.dark thead {
+  background-color: #1e293b !important;
+  color: #94a3b8 !important;
+  border-color: #334155 !important;
+}
+
+.dark tbody tr {
+  border-color: #1e293b !important;
+}
+
+.dark tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+}
+
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b !important;
+}
+
+.dark .shadow-subtle,
+.dark .shadow-card,
+.dark .shadow-elevated {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7) !important;
 }
 
 /* Dark mode scrollbars */
@@ -103,34 +201,6 @@
   background-image: 
     linear-gradient(to right, rgba(51, 65, 85, 0.4) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(51, 65, 85, 0.4) 1px, transparent 1px);
-}
-
-/* Dark mode tabs */
-.dark .tab-pill-inactive {
-  background-color: #0f172a !important;
-  color: #cbd5e1 !important;
-  border: 1.5px solid #1e293b !important;
-}
-
-.dark .tab-pill-inactive:hover {
-  background-color: #064e3b !important;
-  color: #6ee7b7 !important;
-  border-color: #10b981 !important;
-  box-shadow: 0 4px 14px -1px rgba(16, 185, 129, 0.35) !important;
-  transform: translateY(-2px) !important;
-}
-
-.dark .tab-pill-active {
-  background-color: #047857 !important;
-  color: #ffffff !important;
-  border: 1.5px solid #047857 !important;
-  box-shadow: 0 4px 14px -2px rgba(4, 120, 87, 0.5) !important;
-}
-
-.dark .tab-pill-active:hover {
-  background-color: #065f46 !important;
-  border-color: #065f46 !important;
-  transform: translateY(-1px) !important;
 }
 
 /* Print specific styles for Payslips and Reports */
