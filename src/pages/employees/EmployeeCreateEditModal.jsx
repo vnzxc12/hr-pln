@@ -92,15 +92,36 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
   const handleChange = (field, value) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
+
+      // If user selects a Designation / Position, auto-sync its parent department & workforce category
+      if (field === 'designation_id' && value) {
+        const des = designations.find(d => d.id === value);
+        if (des) {
+          if (des.department_id) updated.department_id = des.department_id;
+          if (des.workforce_category) updated.workforce_category = des.workforce_category;
+        }
+      }
+
+      // If user selects a Department, verify or auto-select a matching designation
+      if (field === 'department_id') {
+        if (value) {
+          const currentDes = designations.find(d => d.id === prev.designation_id);
+          if (currentDes && currentDes.department_id && currentDes.department_id !== value) {
+            const matchingDes = designations.find(d => d.department_id === value);
+            updated.designation_id = matchingDes ? matchingDes.id : '';
+          }
+        }
+      }
+
       // If workforce category toggled, update smart defaults
       if (field === 'workforce_category') {
         if (value === 'office') {
           updated.rate_type = 'Monthly';
-          updated.base_rate = 45000;
+          updated.base_rate = Number(updated.base_rate) < 10000 ? 45000 : Number(updated.base_rate);
           updated.employment_type = 'Regular';
         } else {
           updated.rate_type = 'Daily';
-          updated.base_rate = 850;
+          updated.base_rate = Number(updated.base_rate) > 5000 ? 850 : Number(updated.base_rate);
           updated.employment_type = 'Project-Based';
         }
       }
@@ -162,9 +183,16 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
     onClose && onClose();
   };
 
-  const filteredDesignations = designations.filter(
-    d => d.workforce_category === formData.workforce_category
-  );
+  const filteredDesignations = designations.filter(d => {
+    if (formData.department_id) {
+      return d.department_id === formData.department_id;
+    }
+    return d.workforce_category === formData.workforce_category;
+  });
+
+  const displayDesignations = filteredDesignations.length > 0
+    ? filteredDesignations
+    : designations.filter(d => d.workforce_category === formData.workforce_category);
 
   const availableSites = sites.filter(
     s => !formData.assigned_project_id || s.project_id === formData.assigned_project_id
@@ -510,7 +538,7 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
                   className="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 font-semibold"
                 >
                   <option value="">-- Select Position --</option>
-                  {filteredDesignations.map(des => (
+                  {displayDesignations.map(des => (
                     <option key={des.id} value={des.id}>{des.title}</option>
                   ))}
                 </select>

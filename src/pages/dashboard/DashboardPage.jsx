@@ -48,6 +48,9 @@ export const DashboardPage = () => {
   useEffect(() => {
     loadData();
     const unsubscribe = dataService.subscribe(loadData);
+    dataService.syncWithSupabase().then(() => {
+      loadData();
+    });
     return () => unsubscribe();
   }, []);
 
