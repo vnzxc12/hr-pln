@@ -311,13 +311,13 @@ export const EmployeeProfilePage = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 flex items-center gap-2 whitespace-nowrap cursor-pointer select-none ${
                 isActive
-                  ? 'bg-emerald-900 text-white shadow-card'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
+                  ? 'bg-emerald-900 text-white shadow-md border border-emerald-900 ring-2 ring-emerald-900/20'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 hover:shadow-xs active:scale-95'
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-300' : 'text-slate-400'}`} />
+              <Icon className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-emerald-300' : 'text-slate-400'}`} />
               <span>{tab.label}</span>
             </button>
           );
@@ -704,49 +704,63 @@ export const EmployeeProfilePage = () => {
       )}
 
       {/* TAB 9: PAYROLL & PAYSLIPS */}
-      {activeTab === 'payroll' && canAccessPayroll && (
-        <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-subtle space-y-4">
-          <h3 className="text-sm font-bold text-slate-900">Employee Payroll History & Payslips</h3>
-          <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="p-3 pl-4">Period</th>
-                  <th className="p-3">Days Worked</th>
-                  <th className="p-3">Gross Pay</th>
-                  <th className="p-3">Deductions</th>
-                  <th className="p-3">Net Pay</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3 pr-4 text-right">Payslip</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {payrollHistory.map((rec) => {
-                  const period = payrollPeriods.find(p => p.id === rec.payroll_period_id);
-                  return (
-                    <tr key={rec.id} className="hover:bg-slate-50">
-                      <td className="p-3 pl-4 font-mono font-bold text-slate-900">
-                        {period?.period_code || 'Period'}
-                      </td>
-                      <td className="p-3 font-semibold text-slate-700">{rec.days_worked} days</td>
-                      <td className="p-3 font-mono text-slate-800">{formatCurrency(rec.gross_pay)}</td>
-                      <td className="p-3 font-mono text-slate-600">{formatCurrency(rec.total_deductions)}</td>
-                      <td className="p-3 font-mono font-bold text-emerald-700">{formatCurrency(rec.net_pay)}</td>
-                      <td className="p-3"><StatusBadge status={rec.status} /></td>
-                      <td className="p-3 pr-4 text-right">
-                        <button
-                          onClick={() => setSelectedPayslip({ record: rec, period })}
-                          className="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-lg transition-all"
-                        >
-                          View Payslip PDF
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      {activeTab === 'payroll' && isAdmin && (
+        <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-subtle space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900">Employee Payroll History & Payslips</h3>
+            <span className="text-xs text-slate-500 font-mono">{payrollHistory.length} Total Records</span>
           </div>
+
+          {payrollHistory.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 bg-slate-50/60 rounded-2xl border border-slate-200 space-y-2">
+              <DollarSign className="w-10 h-10 mx-auto text-slate-300" />
+              <p className="font-bold text-slate-700 text-sm">No payroll records or payslips generated yet</p>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Payroll entries and printable PDF payslips will automatically appear here once payroll periods are generated and processed in the Payroll module.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                  <tr>
+                    <th className="p-3 pl-4">Period</th>
+                    <th className="p-3">Days Worked</th>
+                    <th className="p-3">Gross Pay</th>
+                    <th className="p-3">Deductions</th>
+                    <th className="p-3">Net Pay</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3 pr-4 text-right">Payslip</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {payrollHistory.map((rec) => {
+                    const period = payrollPeriods.find(p => p.id === rec.payroll_period_id);
+                    return (
+                      <tr key={rec.id} className="hover:bg-slate-50">
+                        <td className="p-3 pl-4 font-mono font-bold text-slate-900">
+                          {period?.period_code || 'Period'}
+                        </td>
+                        <td className="p-3 font-semibold text-slate-700">{rec.days_worked} days</td>
+                        <td className="p-3 font-mono text-slate-800">{formatCurrency(rec.gross_pay)}</td>
+                        <td className="p-3 font-mono text-slate-600">{formatCurrency(rec.total_deductions)}</td>
+                        <td className="p-3 font-mono font-bold text-emerald-700">{formatCurrency(rec.net_pay)}</td>
+                        <td className="p-3"><StatusBadge status={rec.status} /></td>
+                        <td className="p-3 pr-4 text-right">
+                          <button
+                            onClick={() => setSelectedPayslip({ record: rec, period })}
+                            className="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-lg transition-all cursor-pointer"
+                          >
+                            View Payslip PDF
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
