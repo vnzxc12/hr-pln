@@ -19,13 +19,14 @@ import {
 import PesoIcon from '../../components/common/PesoIcon';
 import Logo from '../../assets/Logo';
 import { useAuth } from '../../context/AuthContext';
-import Modal from '../../components/common/Modal';
 import InstallGuideModal from '../../components/pwa/InstallGuideModal';
+import { usePWAInstall } from '../../hooks/usePWAInstall';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, currentUser } = useAuth();
+  const { isInstalled, isGuideOpen, setIsGuideOpen, triggerInstall } = usePWAInstall();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +39,6 @@ export const LoginPage = () => {
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
   const [policyType, setPolicyType] = useState('privacy'); // 'privacy' | 'terms' | 'support'
-  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   const rawFrom = location.state?.from?.pathname;
   const from = (rawFrom && rawFrom !== '/login') ? rawFrom : '/';
@@ -92,13 +92,15 @@ export const LoginPage = () => {
 
       {/* Top Bar with PWA install button */}
       <div className="w-full max-w-5xl mx-auto flex items-center justify-end">
-        <button
-          onClick={() => setIsInstallModalOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200/90 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-all shadow-2xs cursor-pointer"
-        >
-          <Download className="w-3.5 h-3.5 text-emerald-700" />
-          <span>Install App</span>
-        </button>
+        {!isInstalled && (
+          <button
+            onClick={triggerInstall}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200/90 text-slate-700 text-xs font-semibold hover:bg-slate-50 hover:text-emerald-800 transition-all shadow-2xs cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-700" />
+            <span>Install App</span>
+          </button>
+        )}
       </div>
 
       {/* MAIN TWO-COLUMN CENTERED LOGIN CONTAINER (780px - 900px wide) */}
@@ -419,8 +421,9 @@ export const LoginPage = () => {
 
       {/* PWA INSTALL GUIDE MODAL */}
       <InstallGuideModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        onDirectInstall={triggerInstall}
       />
     </div>
   );

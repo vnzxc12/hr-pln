@@ -19,17 +19,18 @@ import { useTheme } from '../../context/ThemeContext';
 import NotificationDropdown from './NotificationDropdown';
 import GlobalSearchModal from './GlobalSearchModal';
 import InstallGuideModal from '../pwa/InstallGuideModal';
+import { usePWAInstall } from '../../hooks/usePWAInstall';
 
 export const Header = ({ onMenuToggle }) => {
   const { currentUser, logout, isAdmin } = useAuth();
   const { unreadCount } = useNotifications();
   const { theme, isDark, toggleTheme } = useTheme();
+  const { isInstalled, isGuideOpen, setIsGuideOpen, triggerInstall } = usePWAInstall();
   const navigate = useNavigate();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -78,14 +79,16 @@ export const Header = ({ onMenuToggle }) => {
         </button>
 
         {/* PWA Install Button */}
-        <button
-          onClick={() => setIsInstallModalOpen(true)}
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all border border-emerald-200 dark:border-emerald-800 shadow-2xs cursor-pointer"
-          title="Install Project Lunayve App"
-        >
-          <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span>Install App</span>
-        </button>
+        {!isInstalled && (
+          <button
+            onClick={triggerInstall}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all border border-emerald-200 dark:border-emerald-800 shadow-2xs cursor-pointer"
+            title="Install Project Lunayve App"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Install App</span>
+          </button>
+        )}
 
         {/* Notification Bell */}
         <div className="relative">
@@ -174,8 +177,9 @@ export const Header = ({ onMenuToggle }) => {
 
       {/* PWA Install Guide Modal */}
       <InstallGuideModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        onDirectInstall={triggerInstall}
       />
     </header>
   );
