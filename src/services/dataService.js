@@ -276,7 +276,7 @@ export const dataService = {
         { data: sbDesigs, error: errDesigs },
         { data: sbProjects, error: errProjects },
         { data: sbSites, error: errSites },
-        { data: sbEmployees, error: errEmps },
+        { data: sbEmps, error: errEmps },
         { data: sbSiteAsgs, error: errSiteAsgs },
         { data: sbDocCats, error: errDocCats },
         { data: sbDocs, error: errDocs },
