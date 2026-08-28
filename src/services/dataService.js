@@ -904,17 +904,38 @@ export const dataService = {
   },
 
   getAttendanceByEmployee(employeeId) {
-    return attendanceLogs.filter(a => a.employee_id === employeeId);
+    const emp = employees.find(e => e.id === employeeId || e.employee_id === employeeId);
+    const validIds = [employeeId];
+    if (emp) {
+      if (emp.id && !validIds.includes(emp.id)) validIds.push(emp.id);
+      if (emp.employee_id && !validIds.includes(emp.employee_id)) validIds.push(emp.employee_id);
+    }
+    return attendanceLogs.filter(a => validIds.includes(a.employee_id));
   },
 
   recordAttendance(logData, user) {
+    const emp = employees.find(e => e.id === logData.employee_id || e.employee_id === logData.employee_id);
+    const targetEmpId = emp?.id || logData.employee_id;
+
     const existingIndex = attendanceLogs.findIndex(
-      a => a.employee_id === logData.employee_id && a.date === logData.date
+      a => (a.employee_id === targetEmpId || (emp && a.employee_id === emp.employee_id)) && a.date === logData.date
     );
 
     const newLog = {
       ...logData,
       id: logData.id && logData.id.length === 36 ? logData.id : generateUUID(),
+      employee_id: targetEmpId,
+      project_id: sanitizeUUID(logData.project_id || emp?.assigned_project_id),
+      site_id: sanitizeUUID(logData.site_id || emp?.assigned_site_id),
+      regular_hours: Number(logData.regular_hours) || 0,
+      overtime_hours: Number(logData.overtime_hours) || 0,
+      night_diff_hours: Number(logData.night_diff_hours) || 0,
+      holiday_hours: Number(logData.holiday_hours) || 0,
+      rest_day_hours: Number(logData.rest_day_hours) || 0,
+      late_minutes: Number(logData.late_minutes) || 0,
+      undertime_minutes: Number(logData.undertime_minutes) || 0,
+      status: logData.status || 'Present',
+      notes: logData.notes?.trim() || null,
       updated_at: new Date().toISOString()
     };
 
@@ -927,8 +948,32 @@ export const dataService = {
     notifySubscribers('attendance');
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('attendance').upsert([newLog], { onConflict: 'employee_id,date' }).then(({ error }) => {
-        if (error) console.warn('Supabase attendance upsert error:', error);
+      const dbLog = {
+        id: newLog.id,
+        employee_id: newLog.employee_id,
+        date: newLog.date,
+        time_in: newLog.time_in || null,
+        time_out: newLog.time_out || null,
+        regular_hours: newLog.regular_hours,
+        overtime_hours: newLog.overtime_hours,
+        night_diff_hours: newLog.night_diff_hours,
+        holiday_hours: newLog.holiday_hours,
+        rest_day_hours: newLog.rest_day_hours,
+        late_minutes: newLog.late_minutes,
+        undertime_minutes: newLog.undertime_minutes,
+        status: newLog.status,
+        project_id: newLog.project_id,
+        site_id: newLog.site_id,
+        notes: newLog.notes,
+        updated_at: newLog.updated_at
+      };
+
+      supabase.from('attendance').upsert([dbLog], { onConflict: 'employee_id,date' }).then(({ data, error }) => {
+        if (error) {
+          console.error('Supabase attendance upsert error:', error);
+        } else {
+          console.log('Supabase attendance recorded successfully:', newLog.date, newLog.employee_id);
+        }
       });
     }
 
@@ -939,10 +984,25 @@ export const dataService = {
   bulkImportAttendance(records, user) {
     const logsToUpsert = [];
     records.forEach(rec => {
-      const idx = attendanceLogs.findIndex(a => a.employee_id === rec.employee_id && a.date === rec.date);
+      const emp = employees.find(e => e.id === rec.employee_id || e.employee_id === rec.employee_id);
+      const targetEmpId = emp?.id || rec.employee_id;
+
+      const idx = attendanceLogs.findIndex(
+        a => (a.employee_id === targetEmpId || (emp && a.employee_id === emp.employee_id)) && a.date === rec.date
+      );
       const entry = {
         ...rec,
         id: rec.id && rec.id.length === 36 ? rec.id : generateUUID(),
+        employee_id: targetEmpId,
+        project_id: sanitizeUUID(rec.project_id || emp?.assigned_project_id),
+        site_id: sanitizeUUID(rec.site_id || emp?.assigned_site_id),
+        regular_hours: Number(rec.regular_hours) || 0,
+        overtime_hours: Number(rec.overtime_hours) || 0,
+        night_diff_hours: Number(rec.night_diff_hours) || 0,
+        holiday_hours: Number(rec.holiday_hours) || 0,
+        rest_day_hours: Number(rec.rest_day_hours) || 0,
+        late_minutes: Number(rec.late_minutes) || 0,
+        undertime_minutes: Number(rec.undertime_minutes) || 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };

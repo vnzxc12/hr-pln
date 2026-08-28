@@ -56,6 +56,9 @@ export const AttendanceListPage = () => {
   useEffect(() => {
     loadData();
     const unsubscribe = dataService.subscribe(loadData);
+    dataService.syncWithSupabase().then(() => {
+      loadData();
+    });
     return () => unsubscribe();
   }, []);
 
@@ -65,20 +68,22 @@ export const AttendanceListPage = () => {
       alert('Please select an employee.');
       return;
     }
-    const emp = employees.find(item => item.id === entryData.employee_id);
+    const emp = employees.find(item => item.id === entryData.employee_id || item.employee_id === entryData.employee_id);
     dataService.recordAttendance({
       ...entryData,
+      employee_id: emp?.id || entryData.employee_id,
       project_id: emp?.assigned_project_id,
       site_id: emp?.assigned_site_id
     }, currentUser);
 
+    setSelectedDate(entryData.date); // Switch filter to the date just logged
     setIsEntryModalOpen(false);
     loadData();
   };
 
   const handleExportAttendance = () => {
     const exportData = filteredAttendance.map(a => {
-      const emp = employees.find(e => e.id === a.employee_id);
+      const emp = employees.find(e => e.id === a.employee_id || e.employee_id === a.employee_id);
       const prj = projects.find(p => p.id === a.project_id);
       const st = sites.find(s => s.id === a.site_id);
       return {
@@ -102,7 +107,7 @@ export const AttendanceListPage = () => {
   // Filtered List
   const filteredAttendance = attendance.filter(att => {
     if (selectedDate && att.date !== selectedDate) return false;
-    const emp = employees.find(e => e.id === att.employee_id);
+    const emp = employees.find(e => e.id === att.employee_id || e.employee_id === att.employee_id);
     if (selectedCategory !== 'all' && emp?.workforce_category !== selectedCategory) return false;
     if (selectedProject !== 'all' && att.project_id !== selectedProject) return false;
     return true;
