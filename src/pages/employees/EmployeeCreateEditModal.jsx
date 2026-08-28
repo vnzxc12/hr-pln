@@ -71,9 +71,8 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
         daily_allowance: Number(employeeToEdit.daily_allowance) || 0
       });
     } else {
-      // Generate Next Employee ID
-      const count = dataService.getEmployees().length + 1;
-      const nextCode = `PLN-2026-${String(count).padStart(3, '0')}`;
+      // Dynamic non-colliding employee code
+      const nextCode = dataService.getNextEmployeeId();
       setFormData(prev => ({
         ...prev,
         employee_id: nextCode,

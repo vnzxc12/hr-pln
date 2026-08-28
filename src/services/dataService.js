@@ -416,6 +416,22 @@ export const dataService = {
     return employees.filter(e => !e.is_deleted);
   },
 
+  getNextEmployeeId() {
+    let maxNum = 0;
+    employees.forEach(emp => {
+      if (emp.employee_id) {
+        const match = emp.employee_id.match(/\d+$/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > maxNum) {
+            maxNum = num;
+          }
+        }
+      }
+    });
+    return `PLN-2026-${String(maxNum + 1).padStart(3, '0')}`;
+  },
+
   getEmployeeById(id) {
     return employees.find(e => (e.id === id || e.employee_id === id) && !e.is_deleted);
   },
@@ -438,17 +454,22 @@ export const dataService = {
       updated_at: new Date().toISOString()
     });
 
-    employees = [cleanData, ...employees];
+    const existingIndex = employees.findIndex(e => e.employee_id === cleanData.employee_id || e.id === cleanData.id);
+    if (existingIndex >= 0) {
+      employees[existingIndex] = { ...employees[existingIndex], ...cleanData };
+    } else {
+      employees = [cleanData, ...employees];
+    }
     saveToStorage('employees', employees);
     notifySubscribers('employees');
 
-    // Async write to Supabase PostgreSQL cloud backend
+    // Async write to Supabase PostgreSQL cloud backend with safe upsert
     if (isSupabaseConfigured && supabase) {
-      supabase.from('employees').insert([cleanData]).then(({ data, error }) => {
+      supabase.from('employees').upsert([cleanData], { onConflict: 'employee_id' }).then(({ data, error }) => {
         if (error) {
-          console.error('Supabase create employee error:', error);
+          console.error('Supabase create/upsert employee error:', error);
         } else {
-          console.log('Supabase employee created successfully:', cleanData.employee_id);
+          console.log('Supabase employee saved successfully:', cleanData.employee_id);
         }
       });
     }
