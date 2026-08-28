@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import PesoIcon from '../../components/common/PesoIcon';
 import Logo from '../../assets/Logo';
+import Modal from '../../components/common/Modal';
 import { useAuth } from '../../context/AuthContext';
 import InstallGuideModal from '../../components/pwa/InstallGuideModal';
 import { usePWAInstall } from '../../hooks/usePWAInstall';

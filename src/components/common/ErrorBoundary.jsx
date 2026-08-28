@@ -16,8 +16,11 @@ export class ErrorBoundary extends React.Component {
   }
 
   handleReset = () => {
+    try {
+      localStorage.removeItem('lunayve_active_session');
+    } catch (e) {}
     this.setState({ hasError: false, error: null });
-    window.location.replace('/login');
+    window.location.href = '/login';
   };
 
   render() {
