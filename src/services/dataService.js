@@ -469,8 +469,9 @@ export const dataService = {
   },
 
   // --- EMPLOYEES ---
-  getEmployees() {
-    return employees.filter(e => !e.is_deleted);
+  getEmployees(includeDeleted = true) {
+    if (includeDeleted) return [...employees];
+    return employees.filter(e => !e.is_deleted && e.employment_status !== 'Terminated');
   },
 
   getNextEmployeeId() {
@@ -490,7 +491,7 @@ export const dataService = {
   },
 
   getEmployeeById(id) {
-    return employees.find(e => (e.id === id || e.employee_id === id) && !e.is_deleted);
+    return employees.find(e => (e.id === id || e.employee_id === id));
   },
 
   createEmployee(employeeData, user) {

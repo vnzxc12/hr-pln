@@ -12,7 +12,8 @@ import {
   Building,
   HardHat,
   ChevronRight,
-  Briefcase
+  Briefcase,
+  RotateCcw
 } from 'lucide-react';
 import { WorkforceBadge, StatusBadge } from '../../components/common/Badge';
 import { dataService } from '../../services/dataService';
@@ -31,13 +32,13 @@ export const EmployeeListPage = () => {
   const [projects, setProjects] = useState([]);
   const [sites, setSites] = useState([]);
 
-  // Filter States
+  // Filter States - Default status is 'Active'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [selectedDept, setSelectedDept] = useState('all');
   const [selectedDesignation, setSelectedDesignation] = useState('all');
   const [selectedProject, setSelectedProject] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState(searchParams.get('status') || 'all');
+  const [selectedStatus, setSelectedStatus] = useState(searchParams.get('status') || 'Active');
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
 
   // Modal State
@@ -72,8 +73,15 @@ export const EmployeeListPage = () => {
   }, [selectedCategory]);
 
   const handleDeactivate = (emp) => {
-    if (window.confirm(`Are you sure you want to deactivate ${emp.first_name} ${emp.last_name}? (All history, documents and payroll logs will remain preserved)`)) {
+    if (window.confirm(`Are you sure you want to deactivate and terminate ${emp.first_name} ${emp.last_name}? (All past payroll records, documents, and attendance history will remain safely preserved in the database)`)) {
       dataService.softDeleteEmployee(emp.id, currentUser);
+      loadData();
+    }
+  };
+
+  const handleRestore = (emp) => {
+    if (window.confirm(`Reactivate ${emp.first_name} ${emp.last_name} back to the Active Workforce directory?`)) {
+      dataService.updateEmployee(emp.id, { is_deleted: false, employment_status: 'Active' }, currentUser);
       loadData();
     }
   };
@@ -106,13 +114,22 @@ export const EmployeeListPage = () => {
     if (selectedDesignation !== 'all' && emp.designation_id !== selectedDesignation) return false;
     // Project
     if (selectedProject !== 'all' && emp.assigned_project_id !== selectedProject) return false;
-    // Status
-    if (selectedStatus !== 'all' && emp.employment_status !== selectedStatus) return false;
+    
+    // Status Filter (Default 'Active', or explicit 'Terminated', 'On Leave', 'Suspended', etc.)
+    if (selectedStatus === 'Active') {
+      if (emp.is_deleted || emp.employment_status !== 'Active') return false;
+    } else if (selectedStatus === 'Terminated') {
+      if (!emp.is_deleted && emp.employment_status !== 'Terminated') return false;
+    } else if (selectedStatus !== 'all') {
+      if (emp.employment_status !== selectedStatus) return false;
+    }
+
     // Search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchName = `${emp.first_name} ${emp.last_name}`.toLowerCase().includes(q);
-      const matchId = emp.employee_id.toLowerCase().includes(q);
+      const fullName = `${emp.first_name || ''} ${emp.middle_name || ''} ${emp.last_name || ''} ${emp.suffix || ''}`.toLowerCase();
+      const matchName = fullName.includes(q);
+      const matchId = emp.employee_id && emp.employee_id.toLowerCase().includes(q);
       const matchPhone = emp.contact_number && emp.contact_number.includes(q);
       if (!matchName && !matchId && !matchPhone) return false;
     }
@@ -368,23 +385,35 @@ export const EmployeeListPage = () => {
 
                           {canManageEmployees && (
                             <>
-                              <button
-                                onClick={() => {
-                                  setEditingEmployee(emp);
-                                  setIsModalOpen(true);
-                                }}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-sky-700 hover:bg-sky-50 transition-colors"
-                                title="Edit Employee"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeactivate(emp)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-700 hover:bg-rose-50 transition-colors"
-                                title="Deactivate Employee"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              {emp.is_deleted || emp.employment_status === 'Terminated' ? (
+                                <button
+                                  onClick={() => handleRestore(emp)}
+                                  className="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-colors"
+                                  title="Reactivate Employee"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setEditingEmployee(emp);
+                                      setIsModalOpen(true);
+                                    }}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/60 transition-colors"
+                                    title="Edit Employee"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeactivate(emp)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors"
+                                    title="Deactivate / Terminate Employee"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
                             </>
                           )}
                         </div>
