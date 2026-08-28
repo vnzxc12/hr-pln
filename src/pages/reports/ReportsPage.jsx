@@ -148,7 +148,7 @@ export const ReportsPage = () => {
       </div>
 
       {/* Reports Tab Navigation */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
+      <div className="tab-scroll-container flex items-center gap-2.5 pb-3 pt-1 border-b border-slate-200 dark:border-slate-800">
         {[
           { id: 'employees', label: '1. Master Workforce Roster', icon: Users },
           { id: 'attendance', label: '2. Site Attendance & Overtime', icon: Clock },
@@ -160,15 +160,24 @@ export const ReportsPage = () => {
           return (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveReportTab(tab.id)}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 flex items-center gap-2 whitespace-nowrap cursor-pointer select-none ${
+              className={`tab-nav-btn group transition-all duration-200 ease-in-out cursor-pointer ${
                 isActive
-                  ? 'bg-emerald-900 dark:bg-emerald-700 text-white shadow-md border border-emerald-900 dark:border-emerald-700 ring-2 ring-emerald-900/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950/80 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-md hover:-translate-y-0.5 active:scale-95'
+                  ? 'bg-emerald-900 dark:bg-emerald-700 text-white shadow-sm ring-2 ring-emerald-900/20 font-bold border border-emerald-800 dark:border-emerald-600'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white shadow-2xs'
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-emerald-300' : 'text-slate-500 dark:text-slate-400'}`} />
+              <Icon className={`w-3.5 h-3.5 transition-colors duration-200 ease-in-out ${isActive ? 'text-emerald-300' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-800 dark:group-hover:text-slate-200'}`} />
               <span>{tab.label}</span>
+              {/* Below Hover & Active Indicator Bar */}
+              <span
+                className={`absolute -bottom-3 left-2 right-2 h-1 rounded-full transition-all duration-200 ease-in-out ${
+                  isActive
+                    ? 'bg-emerald-600 dark:bg-emerald-400 opacity-100 shadow-xs'
+                    : 'bg-transparent group-hover:bg-slate-300 dark:group-hover:bg-slate-600 group-hover:opacity-100 opacity-0'
+                }`}
+              />
             </button>
           );
         })}

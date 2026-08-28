@@ -180,14 +180,14 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* TAB HEADERS */}
-        <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
+        <div className="tab-scroll-container flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
           <button
             type="button"
             onClick={() => setActiveTab('personal')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ease-in-out flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
               activeTab === 'personal'
                 ? 'bg-slate-900 dark:bg-emerald-700 text-white shadow-sm ring-2 ring-slate-900/20'
-                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-xs active:scale-95'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white shadow-2xs'
             }`}
           >
             <User className="w-3.5 h-3.5" />
@@ -196,10 +196,10 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
           <button
             type="button"
             onClick={() => setActiveTab('employment')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ease-in-out flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
               activeTab === 'employment'
                 ? 'bg-slate-900 dark:bg-emerald-700 text-white shadow-sm ring-2 ring-slate-900/20'
-                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-xs active:scale-95'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white shadow-2xs'
             }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
@@ -208,10 +208,10 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
           <button
             type="button"
             onClick={() => setActiveTab('compensation')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ease-in-out flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
               activeTab === 'compensation'
                 ? 'bg-slate-900 dark:bg-emerald-700 text-white shadow-sm ring-2 ring-slate-900/20'
-                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-xs active:scale-95'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white shadow-2xs'
             }`}
           >
             <PesoIcon className="w-3.5 h-3.5" />
@@ -220,10 +220,10 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
           <button
             type="button"
             onClick={() => setActiveTab('government')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ease-in-out flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
               activeTab === 'government'
                 ? 'bg-slate-900 dark:bg-emerald-700 text-white shadow-sm ring-2 ring-slate-900/20'
-                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-xs active:scale-95'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white shadow-2xs'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
