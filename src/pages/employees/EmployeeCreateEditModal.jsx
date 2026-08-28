@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, DollarSign, FileText, Check, AlertCircle, Camera, Upload, Image as ImageIcon } from 'lucide-react';
+import { User, Briefcase, FileText, Check, AlertCircle, Camera, Upload, Image as ImageIcon } from 'lucide-react';
+import PesoIcon from '../../components/common/PesoIcon';
 import Modal from '../../components/common/Modal';
 import { dataService } from '../../services/dataService';
 import { useAuth } from '../../context/AuthContext';
@@ -179,12 +180,14 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* TAB HEADERS */}
-        <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+        <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('personal')}
-            className={`tab-pill px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${
-              activeTab === 'personal' ? 'tab-pill-active' : 'tab-pill-inactive'
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
+              activeTab === 'personal'
+                ? 'bg-slate-900 dark:bg-emerald-700 text-white shadow-sm ring-2 ring-slate-900/20'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-xs active:scale-95'
             }`}
           >
             <User className="w-3.5 h-3.5" />
@@ -193,8 +196,10 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
           <button
             type="button"
             onClick={() => setActiveTab('employment')}
-            className={`tab-pill px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${
-              activeTab === 'employment' ? 'tab-pill-active' : 'tab-pill-inactive'
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
+              activeTab === 'employment'
+                ? 'bg-slate-900 dark:bg-emerald-700 text-white shadow-sm ring-2 ring-slate-900/20'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-xs active:scale-95'
             }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
@@ -203,18 +208,22 @@ export const EmployeeCreateEditModal = ({ isOpen, onClose, employeeToEdit, onSav
           <button
             type="button"
             onClick={() => setActiveTab('compensation')}
-            className={`tab-pill px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${
-              activeTab === 'compensation' ? 'tab-pill-active' : 'tab-pill-inactive'
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
+              activeTab === 'compensation'
+                ? 'bg-slate-900 dark:bg-emerald-700 text-white shadow-sm ring-2 ring-slate-900/20'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-xs active:scale-95'
             }`}
           >
-            <DollarSign className="w-3.5 h-3.5" />
+            <PesoIcon className="w-3.5 h-3.5" />
             <span>3. Wage & Rate Structure</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('government')}
-            className={`tab-pill px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${
-              activeTab === 'government' ? 'tab-pill-active' : 'tab-pill-inactive'
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer select-none ${
+              activeTab === 'government'
+                ? 'bg-slate-900 dark:bg-emerald-700 text-white shadow-sm ring-2 ring-slate-900/20'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-xs active:scale-95'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />

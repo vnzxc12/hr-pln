@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  DollarSign,
   Plus,
   FileSpreadsheet,
   CheckCircle2,
@@ -13,6 +12,7 @@ import {
   ArrowRight,
   TrendingUp
 } from 'lucide-react';
+import PesoIcon from '../../components/common/PesoIcon';
 import { StatusBadge, WorkforceBadge } from '../../components/common/Badge';
 import { dataService } from '../../services/dataService';
 import { formatCurrency } from '../../services/payrollEngine';
@@ -90,7 +90,7 @@ export const PayrollPeriodsPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 font-display flex items-center gap-2">
-            <DollarSign className="w-6 h-6 text-emerald-700" />
+            <PesoIcon className="w-6 h-6 text-emerald-700" />
             Payroll Management & Disbursements
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">

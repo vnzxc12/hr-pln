@@ -18,6 +18,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import Logo from '../../assets/Logo';
+import PesoIcon from '../common/PesoIcon';
 import { useAuth } from '../../context/AuthContext';
 
 export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) => {
@@ -44,7 +45,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
       group: 'FINANCE & COMPLIANCE',
       adminOnly: true,
       items: [
-        { name: 'Payroll & Wages', path: '/payroll', icon: DollarSign, roles: ['admin'] },
+        { name: 'Payroll & Wages', path: '/payroll', icon: PesoIcon, roles: ['admin'] },
         { name: 'Project Labor Cost', path: '/payroll/labor-cost', icon: PieChart, roles: ['admin'] },
         { name: 'Reports & Compliance', path: '/reports', icon: BarChart3, roles: ['admin'] },
       ]

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lunayve-hrms-v5';
+const CACHE_NAME = 'lunayve-hrms-v6';
 
 const STATIC_ASSETS = [
   '/',

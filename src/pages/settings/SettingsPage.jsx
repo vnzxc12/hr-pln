@@ -19,6 +19,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
+import PesoIcon from '../../components/common/PesoIcon';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import Modal from '../../components/common/Modal';
@@ -328,12 +329,12 @@ export const SettingsPage = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
         {[
           { id: 'users', label: `User Accounts & Access (${users.length})`, icon: Users },
           { id: 'designations', label: `Designations (${designations.length})`, icon: Briefcase },
           { id: 'departments', label: `Departments (${departments.length})`, icon: Building },
-          { id: 'payroll_rules', label: `Government Tables (${govRules.length})`, icon: DollarSign },
+          { id: 'payroll_rules', label: `Government Tables (${govRules.length})`, icon: PesoIcon },
           { id: 'company', label: 'Company Profile', icon: Building }
         ].map(tab => {
           const Icon = tab.icon;
@@ -342,11 +343,13 @@ export const SettingsPage = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`tab-pill px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap ${
-                isActive ? 'tab-pill-active' : 'tab-pill-inactive'
+              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 flex items-center gap-2 whitespace-nowrap cursor-pointer select-none ${
+                isActive
+                  ? 'bg-emerald-900 dark:bg-emerald-700 text-white shadow-md border border-emerald-900 dark:border-emerald-700 ring-2 ring-emerald-900/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950/80 hover:text-emerald-950 dark:hover:text-emerald-300 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-md hover:-translate-y-0.5 active:scale-95'
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-emerald-300' : 'text-slate-500'}`} />
+              <Icon className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-emerald-300' : 'text-slate-500 dark:text-slate-400'}`} />
               <span>{tab.label}</span>
             </button>
           );

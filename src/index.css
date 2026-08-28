@@ -2,7 +2,7 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 font-sans min-h-screen antialiased;
+    @apply bg-slate-50 text-slate-900 font-sans min-h-screen antialiased transition-colors duration-200;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -43,15 +43,15 @@
 }
 
 .tab-pill-inactive:hover {
-  background-color: #ecfdf5 !important;
-  color: #064e3b !important;
-  border-color: #10b981 !important;
-  box-shadow: 0 4px 12px -1px rgba(16, 185, 129, 0.25) !important;
-  transform: translateY(-2px);
+  background-color: #d1fae5 !important; /* emerald-100 */
+  color: #064e3b !important; /* emerald-900 */
+  border-color: #10b981 !important; /* emerald-500 */
+  box-shadow: 0 4px 14px -1px rgba(16, 185, 129, 0.3) !important;
+  transform: translateY(-2px) !important;
 }
 
 .tab-pill-inactive:active {
-  transform: translateY(0px) scale(0.97);
+  transform: translateY(0px) scale(0.97) !important;
 }
 
 .tab-pill-active {
@@ -64,7 +64,7 @@
 .tab-pill-active:hover {
   background-color: #022c22 !important;
   border-color: #022c22 !important;
-  transform: translateY(-1px);
+  transform: translateY(-1px) !important;
 }
 
 /* Construction Grid subtle background */
@@ -73,6 +73,64 @@
   background-image: 
     linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+}
+
+/* ==========================================================================
+   COMPREHENSIVE DARK MODE THEME SPECIFICATIONS
+   ========================================================================== */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background-color: #020617 !important; /* slate-950 */
+  color: #f8fafc !important;
+}
+
+/* Dark mode scrollbars */
+.dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Dark mode grid pattern */
+.dark .bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(51, 65, 85, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(51, 65, 85, 0.4) 1px, transparent 1px);
+}
+
+/* Dark mode tabs */
+.dark .tab-pill-inactive {
+  background-color: #0f172a !important;
+  color: #cbd5e1 !important;
+  border: 1.5px solid #1e293b !important;
+}
+
+.dark .tab-pill-inactive:hover {
+  background-color: #064e3b !important;
+  color: #6ee7b7 !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 4px 14px -1px rgba(16, 185, 129, 0.35) !important;
+  transform: translateY(-2px) !important;
+}
+
+.dark .tab-pill-active {
+  background-color: #047857 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #047857 !important;
+  box-shadow: 0 4px 14px -2px rgba(4, 120, 87, 0.5) !important;
+}
+
+.dark .tab-pill-active:hover {
+  background-color: #065f46 !important;
+  border-color: #065f46 !important;
+  transform: translateY(-1px) !important;
 }
 
 /* Print specific styles for Payslips and Reports */

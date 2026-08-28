@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Building, HardHat, Users, MapPin, Calendar, DollarSign, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
+import { Building, HardHat, Users, MapPin, Calendar, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 import { WorkforceBadge, StatusBadge } from '../../components/common/Badge';
 import { dataService } from '../../services/dataService';
 import { formatCurrency } from '../../services/payrollEngine';

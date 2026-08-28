@@ -11,12 +11,12 @@ import {
   AlertCircle,
   Users,
   Building2,
-  DollarSign,
   FileCheck,
   CheckCircle2,
   HelpCircle,
   Download
 } from 'lucide-react';
+import PesoIcon from '../../components/common/PesoIcon';
 import Logo from '../../assets/Logo';
 import { useAuth } from '../../context/AuthContext';
 import Modal from '../../components/common/Modal';
@@ -160,7 +160,7 @@ export const LoginPage = () => {
               {/* Feature 3 */}
               <div className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                  <DollarSign className="w-3.5 h-3.5" />
+                  <PesoIcon className="w-3.5 h-3.5" />
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-slate-900">Payroll & Payslips</h4>

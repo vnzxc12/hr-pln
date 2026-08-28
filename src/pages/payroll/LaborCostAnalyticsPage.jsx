@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PieChart, DollarSign, Building, HardHat, Users, ArrowLeft, Download, TrendingUp } from 'lucide-react';
+import { PieChart, Building, HardHat, Users, ArrowLeft, Download, TrendingUp } from 'lucide-react';
+import PesoIcon from '../../components/common/PesoIcon';
 import { dataService } from '../../services/dataService';
 import { formatCurrency } from '../../services/payrollEngine';
 import { excelService } from '../../services/excelService';

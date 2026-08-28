@@ -9,7 +9,6 @@ import {
   CalendarCheck,
   AlertTriangle,
   FileWarning,
-  DollarSign,
   TrendingUp,
   ArrowRight,
   PieChart,
@@ -17,6 +16,7 @@ import {
   CheckCircle2,
   Calendar
 } from 'lucide-react';
+import PesoIcon from '../../components/common/PesoIcon';
 import { StatCard } from '../../components/common/StatCard';
 import { WorkforceBadge, StatusBadge } from '../../components/common/Badge';
 import { dataService } from '../../services/dataService';
@@ -260,7 +260,7 @@ export const DashboardPage = () => {
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-subtle space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-emerald-700" />
+              <PesoIcon className="w-4 h-4 text-emerald-700" />
               <h3 className="text-sm font-bold text-slate-900">Current Payroll Summary</h3>
             </div>
             {canAccessPayroll && (

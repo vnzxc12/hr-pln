@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, Plus, MapPin, Calendar, Users, DollarSign, ArrowRight } from 'lucide-react';
+import { Building, Plus, MapPin, Calendar, Users, ArrowRight } from 'lucide-react';
 import { StatusBadge } from '../../components/common/Badge';
 import { dataService } from '../../services/dataService';
 import { formatCurrency } from '../../services/payrollEngine';
