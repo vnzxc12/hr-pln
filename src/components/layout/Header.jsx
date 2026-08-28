@@ -105,7 +105,7 @@ export const Header = ({ onMenuToggle }) => {
           </button>
 
           {isNotificationOpen && (
-            <NotificationDropdown onClose={() => setIsNotificationOpen(false)} />
+            <NotificationDropdown isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
           )}
         </div>
 

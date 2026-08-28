@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { dataService } from '../services/dataService';
 
 const AuthContext = createContext(null);
 
@@ -141,11 +142,38 @@ export const AuthProvider = ({ children }) => {
     try {
       localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(sessionUser));
     } catch (e) {}
+
+    // Record sign in in audit trail
+    dataService.logAudit(
+      sessionUser.name,
+      sessionUser.role,
+      `User signed in: ${sessionUser.name} (@${sessionUser.username})`,
+      'Authentication',
+      sessionUser.id,
+      {
+        username: sessionUser.username,
+        email: sessionUser.email,
+        title: sessionUser.title,
+        platform: 'Web Portal / PWA',
+        timestamp: new Date().toISOString()
+      }
+    );
+
     return { success: true, user: sessionUser };
   };
 
   // Logout handler
   const logout = () => {
+    if (currentUser) {
+      dataService.logAudit(
+        currentUser.name,
+        currentUser.role,
+        `User signed out: ${currentUser.name}`,
+        'Authentication',
+        currentUser.id,
+        { timestamp: new Date().toISOString() }
+      );
+    }
     setCurrentUser(null);
     try {
       localStorage.removeItem(CURRENT_USER_STORAGE_KEY);

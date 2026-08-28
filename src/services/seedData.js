@@ -498,6 +498,16 @@ export const initialGovernmentRules = [
 export const initialPayrollPeriods = [];
 export const initialAuditLogs = [
   {
+    id: 'log-0',
+    user_name: 'System Administrator',
+    user_role: 'admin',
+    action: 'User signed in: System Administrator (@admin)',
+    module: 'Authentication',
+    record_id: 'usr_root_admin_001',
+    details: { username: 'admin', role: 'admin', platform: 'Web Portal / PWA' },
+    created_at: new Date().toISOString()
+  },
+  {
     id: 'log-1',
     user_name: 'System Administrator',
     user_role: 'admin',

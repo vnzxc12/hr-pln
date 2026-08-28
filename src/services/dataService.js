@@ -453,6 +453,38 @@ export const dataService = {
       }
     });
 
+    // Pending Leave Requests
+    leaveRequests.forEach(lv => {
+      if (lv.status === 'Pending') {
+        const emp = employees.find(e => e.id === lv.employee_id || e.employee_id === lv.employee_id);
+        const empName = emp ? `${emp.first_name} ${emp.last_name}` : 'Employee';
+        dynamicNotifs.push({
+          id: `notif-leave-${lv.id}`,
+          title: `Pending Leave Request: ${empName}`,
+          message: `${empName} filed ${lv.leave_type} (${lv.days_count || 1} day) starting ${lv.start_date}.`,
+          type: 'leave_pending',
+          link: `/leave`,
+          is_read: false,
+          created_at: lv.created_at || new Date().toISOString()
+        });
+      }
+    });
+
+    // Payroll pending reviews
+    payrollPeriods.forEach(pr => {
+      if (pr.status === 'For Review' || pr.status === 'Draft') {
+        dynamicNotifs.push({
+          id: `notif-pr-${pr.id}`,
+          title: `Payroll ${pr.status}: ${pr.period_code}`,
+          message: `Payout Date: ${pr.payout_date}. Total: ₱${Number(pr.total_net || 0).toLocaleString()}`,
+          type: 'payroll_pending',
+          link: `/payroll`,
+          is_read: false,
+          created_at: pr.updated_at || pr.created_at || new Date().toISOString()
+        });
+      }
+    });
+
     const combined = [...dynamicNotifs, ...notifications];
     const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
     return unique;

@@ -86,6 +86,7 @@ export const AuditLogsPage = () => {
             className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 font-semibold"
           >
             <option value="all">All Modules</option>
+            <option value="Authentication">Authentication & Sign Ins</option>
             <option value="Employees">Employees</option>
             <option value="Payroll">Payroll</option>
             <option value="Sites">Sites & Deployments</option>
