@@ -8,8 +8,14 @@ export const AuditLogsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedModule, setSelectedModule] = useState('all');
 
-  useEffect(() => {
+  const loadData = () => {
     setLogs(dataService.getAuditLogs());
+  };
+
+  useEffect(() => {
+    loadData();
+    const unsubscribe = dataService.subscribe(loadData);
+    return () => unsubscribe();
   }, []);
 
   const handleExport = () => {

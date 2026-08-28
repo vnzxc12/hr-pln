@@ -59,6 +59,8 @@ export const PayrollPeriodsPage = () => {
 
   useEffect(() => {
     loadData();
+    const unsubscribe = dataService.subscribe(loadData);
+    return () => unsubscribe();
   }, []);
 
   const handleSelectPeriod = (period) => {

@@ -98,6 +98,8 @@ export const EmployeeProfilePage = () => {
 
   useEffect(() => {
     loadData();
+    const unsubscribe = dataService.subscribe(loadData);
+    return () => unsubscribe();
   }, [id]);
 
   if (!employee) return null;

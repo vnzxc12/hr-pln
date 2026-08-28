@@ -55,6 +55,8 @@ export const AttendanceListPage = () => {
 
   useEffect(() => {
     loadData();
+    const unsubscribe = dataService.subscribe(loadData);
+    return () => unsubscribe();
   }, []);
 
   const handleCreateEntry = (e) => {

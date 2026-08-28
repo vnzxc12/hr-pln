@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
 const AuthContext = createContext(null);
 
@@ -16,7 +17,7 @@ const DEFAULT_ROOT_ADMIN = {
   title: 'Chief Administrator',
   department: 'Executive Management',
   status: 'active',
-  created_at: new Date().toISOString()
+  created_at: '2026-01-01T00:00:00.000Z'
 };
 
 export const AuthProvider = ({ children }) => {
@@ -26,15 +27,16 @@ export const AuthProvider = ({ children }) => {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Ensure root admin has username
-          return parsed.map(u => u.id === DEFAULT_ROOT_ADMIN.id ? { ...DEFAULT_ROOT_ADMIN, ...u, username: u.username || 'admin' } : u);
+          return parsed.map(u => (u.id === DEFAULT_ROOT_ADMIN.id ? { ...DEFAULT_ROOT_ADMIN, ...u, username: u.username || 'admin' } : u));
         }
       }
     } catch (e) {
       console.warn('Error reading system users:', e);
     }
     const initial = [DEFAULT_ROOT_ADMIN];
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(initial));
+    try {
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(initial));
+    } catch (e) {}
     return initial;
   });
 
@@ -48,10 +50,66 @@ export const AuthProvider = ({ children }) => {
     return null;
   });
 
-  // Save users when updated
+  // Fetch latest users from Supabase Cloud on startup
+  useEffect(() => {
+    const fetchCloudUsers = async () => {
+      if (!isSupabaseConfigured || !supabase) return;
+      try {
+        const { data, error } = await supabase
+          .from('audit_logs')
+          .select('details')
+          .eq('module', 'SystemUsers')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (!error && data && data.length > 0 && Array.isArray(data[0]?.details?.users)) {
+          const cloudUsers = data[0].details.users;
+          if (cloudUsers.length > 0) {
+            // Merge with default root admin
+            const merged = cloudUsers.map(u =>
+              u.id === DEFAULT_ROOT_ADMIN.id ? { ...DEFAULT_ROOT_ADMIN, ...u, username: u.username || 'admin' } : u
+            );
+            // Ensure root admin is present
+            if (!merged.some(u => u.id === DEFAULT_ROOT_ADMIN.id)) {
+              merged.unshift(DEFAULT_ROOT_ADMIN);
+            }
+            setUsers(merged);
+            try {
+              localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
+            } catch (e) {}
+          }
+        }
+      } catch (err) {
+        console.warn('Could not sync system users from Supabase:', err);
+      }
+    };
+
+    fetchCloudUsers();
+  }, []);
+
+  // Save users when updated (dual-write to LocalStorage and Supabase)
   const saveUsers = (updatedUsers) => {
     setUsers(updatedUsers);
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+    try {
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+    } catch (e) {
+      console.warn('Error writing users to localStorage:', e);
+    }
+
+    // Cloud persistence to Supabase
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('audit_logs').insert([{
+        user_name: currentUser?.name || 'System Administrator',
+        user_role: currentUser?.role || 'admin',
+        action: 'System Users Directory Sync',
+        module: 'SystemUsers',
+        record_id: 'sync_users',
+        details: { users: updatedUsers },
+        created_at: new Date().toISOString()
+      }]).then(({ error }) => {
+        if (error) console.warn('Failed to sync users to Supabase:', error);
+      });
+    }
   };
 
   // Login handler with username (or email fallback)
@@ -80,14 +138,18 @@ export const AuthProvider = ({ children }) => {
     };
 
     setCurrentUser(sessionUser);
-    localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(sessionUser));
+    try {
+      localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(sessionUser));
+    } catch (e) {}
     return { success: true, user: sessionUser };
   };
 
   // Logout handler
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+    try {
+      localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+    } catch (e) {}
   };
 
   // Create new user account (Admin only action)
@@ -96,8 +158,9 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Unauthorized: Only administrators can create new user accounts.');
     }
 
-    const username = (userData.username || userData.email?.split('@')[0] || userData.name.toLowerCase().replace(/\s+/g, '.')).trim().toLowerCase();
-    
+    const rawUsername = (userData.username || userData.email?.split('@')[0] || userData.name.toLowerCase().replace(/\s+/g, '.')).trim().toLowerCase();
+    const username = rawUsername.replace(/[^a-z0-9._-]/g, '');
+
     const usernameExists = users.some(u => u.username?.toLowerCase() === username);
     if (usernameExists) {
       throw new Error(`An account with the username "${username}" already exists.`);
@@ -135,7 +198,9 @@ export const AuthProvider = ({ children }) => {
     if (currentUser?.id === userId) {
       const refreshed = { ...currentUser, ...updates };
       setCurrentUser(refreshed);
-      localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(refreshed));
+      try {
+        localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(refreshed));
+      } catch (e) {}
     }
   };
 

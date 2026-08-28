@@ -19,10 +19,25 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 const STORAGE_KEY_PREFIX = 'lunayve_hrms_';
 
+export const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
 const loadFromStorage = (key, fallback) => {
   try {
     const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}${key}`);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(fallback) && Array.isArray(parsed)) return parsed;
+      if (!Array.isArray(fallback) && typeof parsed === 'object' && parsed !== null) return parsed;
+    }
   } catch (err) {
     console.warn(`Could not load ${key} from storage:`, err);
   }
@@ -34,6 +49,20 @@ const saveToStorage = (key, data) => {
     localStorage.setItem(`${STORAGE_KEY_PREFIX}${key}`, JSON.stringify(data));
   } catch (err) {
     console.warn(`Could not save ${key} to storage:`, err);
+    // Quota management: safely truncate large image data if localStorage is full
+    try {
+      if (key === 'employees' && Array.isArray(data)) {
+        const trimmed = data.map(emp => {
+          if (emp.profile_photo && typeof emp.profile_photo === 'string' && emp.profile_photo.startsWith('data:image') && emp.profile_photo.length > 50000) {
+            return { ...emp, profile_photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&fit=crop&q=80' };
+          }
+          return emp;
+        });
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${key}`, JSON.stringify(trimmed));
+      }
+    } catch (e) {
+      console.warn('Storage cleanup failed:', e);
+    }
   }
 };
 
@@ -70,7 +99,15 @@ if (payrollRecords.length === 0) {
   const p1 = payrollPeriods[0];
   if (p1) {
     payrollRecords = employees.map(emp => {
-      const rec = computeEmployeePayroll(emp, { days_worked: emp.workforce_category === 'office' ? 13 : 12, overtime_hours: emp.workforce_category === 'site' ? 8 : 0 }, governmentRules, 'Semi-Monthly');
+      const rec = computeEmployeePayroll(
+        emp,
+        {
+          days_worked: emp.workforce_category === 'office' ? 13 : 12,
+          overtime_hours: emp.workforce_category === 'site' ? 8 : 0
+        },
+        governmentRules,
+        'Semi-Monthly'
+      );
       return {
         ...rec,
         id: `pr-rec-${p1.id}-${emp.id}`,
@@ -98,7 +135,7 @@ if (attendanceLogs.length === 0) {
     rest_day_hours: 0,
     late_minutes: idx % 7 === 0 ? 15 : 0,
     undertime_minutes: 0,
-    status: idx === 19 ? 'Late' : (idx === 14 ? 'On Leave' : 'Present'),
+    status: idx === 19 ? 'Late' : idx === 14 ? 'On Leave' : 'Present',
     project_id: emp.assigned_project_id,
     site_id: emp.assigned_site_id,
     notes: 'Regular site/office duty'
@@ -106,22 +143,169 @@ if (attendanceLogs.length === 0) {
   saveToStorage('attendance', attendanceLogs);
 }
 
+// Event Subscribers for real-time state sync across React components
+const subscribers = new Set();
+const notifySubscribers = (event = 'update') => {
+  subscribers.forEach(cb => {
+    try {
+      cb(event);
+    } catch (e) {
+      console.warn('Subscriber notification failed:', e);
+    }
+  });
+};
+
 // Data Service API
 export const dataService = {
+  subscribe(callback) {
+    subscribers.add(callback);
+    return () => subscribers.delete(callback);
+  },
+
+  // --- SUPABASE CLOUD SYNC ---
+  async syncWithSupabase() {
+    if (!isSupabaseConfigured || !supabase) return false;
+
+    try {
+      // Parallel fetch from all primary Supabase tables
+      const [
+        { data: sbDepts, error: errDepts },
+        { data: sbDesigs, error: errDesigs },
+        { data: sbProjects, error: errProjects },
+        { data: sbSites, error: errSites },
+        { data: sbEmployees, error: errEmps },
+        { data: sbSiteAsgs, error: errSiteAsgs },
+        { data: sbDocCats, error: errDocCats },
+        { data: sbDocs, error: errDocs },
+        { data: sbAttendance, error: errAtt },
+        { data: sbLeaveTypes, error: errLeaveTypes },
+        { data: sbLeaveReqs, error: errLeaveReqs },
+        { data: sbGovRules, error: errGovRules },
+        { data: sbPeriods, error: errPeriods },
+        { data: sbRecords, error: errRecords },
+        { data: sbSettings, error: errSettings },
+        { data: sbAuditLogs, error: errAuditLogs },
+        { data: sbNotifs, error: errNotifs }
+      ] = await Promise.all([
+        supabase.from('departments').select('*'),
+        supabase.from('designations').select('*'),
+        supabase.from('projects').select('*'),
+        supabase.from('sites').select('*'),
+        supabase.from('employees').select('*'),
+        supabase.from('employee_site_assignments').select('*'),
+        supabase.from('document_categories').select('*'),
+        supabase.from('employee_documents').select('*'),
+        supabase.from('attendance').select('*'),
+        supabase.from('leave_types').select('*'),
+        supabase.from('leave_requests').select('*'),
+        supabase.from('government_contribution_rules').select('*'),
+        supabase.from('payroll_periods').select('*'),
+        supabase.from('payroll_records').select('*'),
+        supabase.from('company_settings').select('*').limit(1),
+        supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100),
+        supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(50)
+      ]);
+
+      if (!errDepts && sbDepts?.length > 0) {
+        departments = sbDepts;
+        saveToStorage('departments', departments);
+      }
+      if (!errDesigs && sbDesigs?.length > 0) {
+        designations = sbDesigs;
+        saveToStorage('designations', designations);
+      }
+      if (!errProjects && sbProjects?.length > 0) {
+        projects = sbProjects;
+        saveToStorage('projects', projects);
+      }
+      if (!errSites && sbSites?.length > 0) {
+        sites = sbSites;
+        saveToStorage('sites', sites);
+      }
+      if (!errEmps && sbEmps?.length > 0) {
+        employees = sbEmps;
+        saveToStorage('employees', employees);
+      }
+      if (!errSiteAsgs && sbSiteAsgs) {
+        siteAssignments = sbSiteAsgs;
+        saveToStorage('site_assignments', siteAssignments);
+      }
+      if (!errDocCats && sbDocCats?.length > 0) {
+        documentCategories = sbDocCats;
+        saveToStorage('doc_categories', documentCategories);
+      }
+      if (!errDocs && sbDocs) {
+        documents = sbDocs;
+        saveToStorage('documents', documents);
+      }
+      if (!errAtt && sbAtt?.length > 0) {
+        attendanceLogs = sbAtt;
+        saveToStorage('attendance', attendanceLogs);
+      }
+      if (!errLeaveTypes && sbLeaveTypes?.length > 0) {
+        leaveTypes = sbLeaveTypes;
+        saveToStorage('leave_types', leaveTypes);
+      }
+      if (!errLeaveReqs && sbLeaveReqs) {
+        leaveRequests = sbLeaveReqs;
+        saveToStorage('leave_requests', leaveRequests);
+      }
+      if (!errGovRules && sbGovRules?.length > 0) {
+        governmentRules = sbGovRules;
+        saveToStorage('gov_rules', governmentRules);
+      }
+      if (!errPeriods && sbPeriods?.length > 0) {
+        payrollPeriods = sbPeriods;
+        saveToStorage('payroll_periods', payrollPeriods);
+      }
+      if (!errRecords && sbRecords?.length > 0) {
+        payrollRecords = sbRecords;
+        saveToStorage('payroll_records', payrollRecords);
+      }
+      if (!errSettings && sbSettings?.length > 0) {
+        companySettings = { ...companySettings, ...sbSettings[0] };
+        saveToStorage('company_settings', companySettings);
+      }
+      if (!errAuditLogs && sbAuditLogs?.length > 0) {
+        auditLogs = sbAuditLogs;
+        saveToStorage('audit_logs', auditLogs);
+      }
+      if (!errNotifs && sbNotifs?.length > 0) {
+        notifications = sbNotifs;
+        saveToStorage('notifications', notifications);
+      }
+
+      notifySubscribers('sync_complete');
+      return true;
+    } catch (err) {
+      console.warn('Supabase sync error (running offline fallback):', err);
+      return false;
+    }
+  },
+
   // --- AUDIT LOGGING ---
   logAudit(userName, userRole, action, module, recordId = null, details = {}) {
     const newLog = {
-      id: `aud-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: generateUUID(),
       user_name: userName || 'HR Administrator',
       user_role: userRole || 'HR Administrator',
       action,
       module,
-      record_id: recordId,
+      record_id: recordId ? String(recordId) : null,
       details,
       created_at: new Date().toISOString()
     };
     auditLogs = [newLog, ...auditLogs];
     saveToStorage('audit_logs', auditLogs);
+    notifySubscribers('audit');
+
+    // Async write to Supabase
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('audit_logs').insert([newLog]).then(({ error }) => {
+        if (error) console.warn('Supabase audit log insert error:', error);
+      });
+    }
+
     return newLog;
   },
 
@@ -131,7 +315,6 @@ export const dataService = {
 
   // --- NOTIFICATIONS & ALERTS ---
   getNotifications() {
-    // Dynamically check expiring documents & contracts
     const today = new Date();
     const dynamicNotifs = [];
 
@@ -167,15 +350,19 @@ export const dataService = {
       }
     });
 
-    // Merge static and dynamic without duplicates
     const combined = [...dynamicNotifs, ...notifications];
     const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
     return unique;
   },
 
   markNotificationAsRead(id) {
-    notifications = notifications.map(n => n.id === id ? { ...n, is_read: true } : n);
+    notifications = notifications.map(n => (n.id === id ? { ...n, is_read: true } : n));
     saveToStorage('notifications', notifications);
+    notifySubscribers('notifications');
+
+    if (isSupabaseConfigured && supabase && !id.startsWith('notif-exp-') && !id.startsWith('notif-soon-')) {
+      supabase.from('notifications').update({ is_read: true }).eq('id', id).then();
+    }
   },
 
   // --- EMPLOYEES ---
@@ -184,86 +371,174 @@ export const dataService = {
   },
 
   getEmployeeById(id) {
-    return employees.find(e => e.id === id && !e.is_deleted);
+    return employees.find(e => (e.id === id || e.employee_id === id) && !e.is_deleted);
   },
 
   createEmployee(employeeData, user) {
-    const newId = `emp-${Date.now()}`;
-    const newEmp = {
+    const newId = employeeData.id && employeeData.id.includes('-') && employeeData.id.length === 36
+      ? employeeData.id
+      : generateUUID();
+
+    const cleanData = {
       ...employeeData,
       id: newId,
+      first_name: employeeData.first_name?.trim() || '',
+      middle_name: employeeData.middle_name?.trim() || null,
+      last_name: employeeData.last_name?.trim() || '',
+      suffix: employeeData.suffix?.trim() || null,
+      workforce_category: employeeData.workforce_category || 'site',
+      contact_number: employeeData.contact_number || '+63 900 000 0000',
+      email: employeeData.email?.trim() || null,
+      department_id: employeeData.department_id || null,
+      designation_id: employeeData.designation_id || null,
+      assigned_project_id: employeeData.assigned_project_id || null,
+      assigned_site_id: employeeData.assigned_site_id || null,
+      supervisor_id: employeeData.supervisor_id || null,
+      foreman_id: employeeData.foreman_id || null,
+      rate_type: employeeData.rate_type || 'Daily',
+      base_rate: Number(employeeData.base_rate) || 0,
+      monthly_allowance: Number(employeeData.monthly_allowance) || 0,
+      daily_allowance: Number(employeeData.daily_allowance) || 0,
       is_deleted: false,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
-    employees = [newEmp, ...employees];
-    saveToStorage('employees', employees);
 
-    // If site/project is assigned, record initial site assignment history
-    if (newEmp.assigned_project_id && newEmp.assigned_site_id) {
-      const proj = projects.find(p => p.id === newEmp.assigned_project_id);
-      const site = sites.find(s => s.id === newEmp.assigned_site_id);
-      this.createSiteAssignment({
-        employee_id: newId,
-        project_id: newEmp.assigned_project_id,
-        site_id: newEmp.assigned_site_id,
-        position_title: newEmp.designation_id,
-        supervisor_name: site?.site_supervisor_name || 'Assigned Supervisor',
-        assignment_start: newEmp.date_assigned || newEmp.date_hired || new Date().toISOString().split('T')[0],
-        status: 'Active',
-        notes: `Initial assignment upon onboarding to ${proj?.name || 'Project'}`
-      }, user);
+    employees = [cleanData, ...employees];
+    saveToStorage('employees', employees);
+    notifySubscribers('employees');
+
+    // Async write to Supabase
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('employees').insert([cleanData]).then(({ error }) => {
+        if (error) console.warn('Supabase create employee error:', error);
+      });
     }
 
-    this.logAudit(user?.name, user?.role, `Created new employee: ${newEmp.first_name} ${newEmp.last_name} (${newEmp.employee_id})`, 'Employees', newId, { employee_id: newEmp.employee_id, category: newEmp.workforce_category });
-    return newEmp;
+    // If site/project is assigned, record initial site assignment history
+    if (cleanData.assigned_project_id && cleanData.assigned_site_id) {
+      const proj = projects.find(p => p.id === cleanData.assigned_project_id);
+      const site = sites.find(s => s.id === cleanData.assigned_site_id);
+      this.createSiteAssignment(
+        {
+          employee_id: newId,
+          project_id: cleanData.assigned_project_id,
+          site_id: cleanData.assigned_site_id,
+          position_title: cleanData.designation_id,
+          supervisor_name: site?.site_supervisor_name || 'Assigned Supervisor',
+          assignment_start: cleanData.date_assigned || cleanData.date_hired || new Date().toISOString().split('T')[0],
+          status: 'Active',
+          notes: `Initial assignment upon onboarding to ${proj?.name || 'Project'}`
+        },
+        user
+      );
+    }
+
+    this.logAudit(
+      user?.name,
+      user?.role,
+      `Created new employee: ${cleanData.first_name} ${cleanData.last_name} (${cleanData.employee_id})`,
+      'Employees',
+      newId,
+      { employee_id: cleanData.employee_id, category: cleanData.workforce_category }
+    );
+
+    return cleanData;
   },
 
   updateEmployee(id, updates, user) {
-    const existing = employees.find(e => e.id === id);
+    const existing = employees.find(e => e.id === id || e.employee_id === id);
     if (!existing) return null;
+
+    const targetId = existing.id;
 
     // Check if site assignment changed
     const siteChanged = updates.assigned_site_id && updates.assigned_site_id !== existing.assigned_site_id;
     const projectChanged = updates.assigned_project_id && updates.assigned_project_id !== existing.assigned_project_id;
 
     if (siteChanged || projectChanged) {
-      // Close past active assignment
       siteAssignments = siteAssignments.map(asg => {
-        if (asg.employee_id === id && asg.status === 'Active') {
-          return { ...asg, status: 'Transferred', assignment_end: new Date().toISOString().split('T')[0] };
+        if (asg.employee_id === targetId && asg.status === 'Active') {
+          const closed = { ...asg, status: 'Transferred', assignment_end: new Date().toISOString().split('T')[0] };
+          if (isSupabaseConfigured && supabase) {
+            supabase.from('employee_site_assignments').update(closed).eq('id', asg.id).then();
+          }
+          return closed;
         }
         return asg;
       });
 
-      // Create new assignment
       const newSite = sites.find(s => s.id === (updates.assigned_site_id || existing.assigned_site_id));
-      this.createSiteAssignment({
-        employee_id: id,
-        project_id: updates.assigned_project_id || existing.assigned_project_id,
-        site_id: updates.assigned_site_id || existing.assigned_site_id,
-        position_title: updates.designation_id || existing.designation_id,
-        supervisor_name: newSite?.site_supervisor_name || 'Site Supervisor',
-        assignment_start: new Date().toISOString().split('T')[0],
-        status: 'Active',
-        notes: 'Transferred via Employee Profile update'
-      }, user);
+      this.createSiteAssignment(
+        {
+          employee_id: targetId,
+          project_id: updates.assigned_project_id || existing.assigned_project_id,
+          site_id: updates.assigned_site_id || existing.assigned_site_id,
+          position_title: updates.designation_id || existing.designation_id,
+          supervisor_name: newSite?.site_supervisor_name || 'Site Supervisor',
+          assignment_start: new Date().toISOString().split('T')[0],
+          status: 'Active',
+          notes: 'Transferred via Employee Profile update'
+        },
+        user
+      );
     }
 
-    const updated = { ...existing, ...updates, updated_at: new Date().toISOString() };
-    employees = employees.map(e => e.id === id ? updated : e);
-    saveToStorage('employees', employees);
+    // Clean numerical values
+    const cleanUpdates = { ...updates };
+    if (cleanUpdates.base_rate !== undefined) cleanUpdates.base_rate = Number(cleanUpdates.base_rate) || 0;
+    if (cleanUpdates.monthly_allowance !== undefined) cleanUpdates.monthly_allowance = Number(cleanUpdates.monthly_allowance) || 0;
+    if (cleanUpdates.daily_allowance !== undefined) cleanUpdates.daily_allowance = Number(cleanUpdates.daily_allowance) || 0;
+    cleanUpdates.updated_at = new Date().toISOString();
 
-    this.logAudit(user?.name, user?.role, `Updated employee profile: ${updated.first_name} ${updated.last_name}`, 'Employees', id, updates);
+    const updated = { ...existing, ...cleanUpdates };
+    employees = employees.map(e => (e.id === targetId ? updated : e));
+    saveToStorage('employees', employees);
+    notifySubscribers('employees');
+
+    // Async write to Supabase
+    if (isSupabaseConfigured && supabase) {
+      const { ...dbFields } = cleanUpdates;
+      supabase.from('employees').update(dbFields).eq('id', targetId).then(({ error }) => {
+        if (error) console.warn('Supabase update employee error:', error);
+      });
+    }
+
+    this.logAudit(
+      user?.name,
+      user?.role,
+      `Updated employee profile: ${updated.first_name} ${updated.last_name} (${updated.employee_id})`,
+      'Employees',
+      targetId,
+      updates
+    );
+
     return updated;
   },
 
   softDeleteEmployee(id, user) {
-    const existing = employees.find(e => e.id === id);
+    const existing = employees.find(e => e.id === id || e.employee_id === id);
     if (!existing) return false;
 
-    employees = employees.map(e => e.id === id ? { ...e, is_deleted: true, employment_status: 'Terminated' } : e);
+    const targetId = existing.id;
+    employees = employees.map(e => (e.id === targetId ? { ...e, is_deleted: true, employment_status: 'Terminated', updated_at: new Date().toISOString() } : e));
     saveToStorage('employees', employees);
-    this.logAudit(user?.name, user?.role, `Deactivated employee: ${existing.first_name} ${existing.last_name} (${existing.employee_id})`, 'Employees', id);
+    notifySubscribers('employees');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('employees').update({ is_deleted: true, employment_status: 'Terminated', updated_at: new Date().toISOString() }).eq('id', targetId).then(({ error }) => {
+        if (error) console.warn('Supabase delete employee error:', error);
+      });
+    }
+
+    this.logAudit(
+      user?.name,
+      user?.role,
+      `Deactivated employee: ${existing.first_name} ${existing.last_name} (${existing.employee_id})`,
+      'Employees',
+      targetId
+    );
+
     return true;
   },
 
@@ -279,18 +554,36 @@ export const dataService = {
   createProject(projectData, user) {
     const newProj = {
       ...projectData,
-      id: `prj-${Date.now()}`,
-      created_at: new Date().toISOString()
+      id: generateUUID(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     projects = [newProj, ...projects];
     saveToStorage('projects', projects);
+    notifySubscribers('projects');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('projects').insert([newProj]).then(({ error }) => {
+        if (error) console.warn('Supabase project insert error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Created project: ${newProj.name} (${newProj.project_code})`, 'Projects', newProj.id);
     return newProj;
   },
 
   updateProject(id, updates, user) {
-    projects = projects.map(p => p.id === id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p);
+    const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
+    projects = projects.map(p => (p.id === id ? { ...p, ...cleanUpdates } : p));
     saveToStorage('projects', projects);
+    notifySubscribers('projects');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('projects').update(cleanUpdates).eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase project update error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Updated project ID ${id}`, 'Projects', id, updates);
     return projects.find(p => p.id === id);
   },
@@ -306,18 +599,36 @@ export const dataService = {
   createSite(siteData, user) {
     const newSite = {
       ...siteData,
-      id: `site-${Date.now()}`,
-      created_at: new Date().toISOString()
+      id: generateUUID(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     sites = [newSite, ...sites];
     saveToStorage('sites', sites);
+    notifySubscribers('sites');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('sites').insert([newSite]).then(({ error }) => {
+        if (error) console.warn('Supabase site insert error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Created site: ${newSite.name} (${newSite.site_code})`, 'Sites', newSite.id);
     return newSite;
   },
 
   updateSite(id, updates, user) {
-    sites = sites.map(s => s.id === id ? { ...s, ...updates, updated_at: new Date().toISOString() } : s);
+    const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
+    sites = sites.map(s => (s.id === id ? { ...s, ...cleanUpdates } : s));
     saveToStorage('sites', sites);
+    notifySubscribers('sites');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('sites').update(cleanUpdates).eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase site update error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Updated site ID ${id}`, 'Sites', id, updates);
     return sites.find(s => s.id === id);
   },
@@ -333,11 +644,18 @@ export const dataService = {
   createSiteAssignment(assignmentData, user) {
     const newAsg = {
       ...assignmentData,
-      id: `asg-${Date.now()}`,
+      id: generateUUID(),
       created_at: new Date().toISOString()
     };
     siteAssignments = [newAsg, ...siteAssignments];
     saveToStorage('site_assignments', siteAssignments);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('employee_site_assignments').insert([newAsg]).then(({ error }) => {
+        if (error) console.warn('Supabase site assignment insert error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Created site assignment for employee ${newAsg.employee_id}`, 'Sites', newAsg.id);
     return newAsg;
   },
@@ -348,9 +666,16 @@ export const dataService = {
   },
 
   createDocumentCategory(catData, user) {
-    const newCat = { ...catData, id: `cat-${Date.now()}` };
+    const newCat = { ...catData, id: generateUUID(), created_at: new Date().toISOString() };
     documentCategories = [...documentCategories, newCat];
     saveToStorage('doc_categories', documentCategories);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('document_categories').insert([newCat]).then(({ error }) => {
+        if (error) console.warn('Supabase doc category insert error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Created document category: ${newCat.name}`, 'Documents', newCat.id);
     return newCat;
   },
@@ -366,22 +691,45 @@ export const dataService = {
   createDocument(docData, user) {
     const newDoc = {
       ...docData,
-      id: `doc-${Date.now()}`,
-      uploaded_by: user?.id || 'user-hr',
+      id: generateUUID(),
+      uploaded_by: user?.id || null,
       uploader_name: user?.name || 'HR Administrator',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     documents = [newDoc, ...documents];
     saveToStorage('documents', documents);
+    notifySubscribers('documents');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('employee_documents').insert([newDoc]).then(({ error }) => {
+        if (error) console.warn('Supabase document insert error:', error);
+      });
+    }
 
     const emp = employees.find(e => e.id === newDoc.employee_id);
-    this.logAudit(user?.name, user?.role, `Uploaded document: ${newDoc.document_name} for ${emp ? emp.first_name + ' ' + emp.last_name : 'Employee'}`, 'Documents', newDoc.id);
+    this.logAudit(
+      user?.name,
+      user?.role,
+      `Uploaded document: ${newDoc.document_name} for ${emp ? emp.first_name + ' ' + emp.last_name : 'Employee'}`,
+      'Documents',
+      newDoc.id
+    );
     return newDoc;
   },
 
   updateDocument(id, updates, user) {
-    documents = documents.map(d => d.id === id ? { ...d, ...updates } : d);
+    const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
+    documents = documents.map(d => (d.id === id ? { ...d, ...cleanUpdates } : d));
     saveToStorage('documents', documents);
+    notifySubscribers('documents');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('employee_documents').update(cleanUpdates).eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase document update error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Updated document metadata ID ${id}`, 'Documents', id);
     return documents.find(d => d.id === id);
   },
@@ -390,6 +738,14 @@ export const dataService = {
     const doc = documents.find(d => d.id === id);
     documents = documents.filter(d => d.id !== id);
     saveToStorage('documents', documents);
+    notifySubscribers('documents');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('employee_documents').delete().eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase document delete error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Deleted document: ${doc?.document_name || id}`, 'Documents', id);
     return true;
   },
@@ -415,7 +771,7 @@ export const dataService = {
 
     const newLog = {
       ...logData,
-      id: logData.id || `att-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: logData.id && logData.id.length === 36 ? logData.id : generateUUID(),
       updated_at: new Date().toISOString()
     };
 
@@ -425,26 +781,53 @@ export const dataService = {
       attendanceLogs = [newLog, ...attendanceLogs];
     }
     saveToStorage('attendance', attendanceLogs);
+    notifySubscribers('attendance');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('attendance').upsert([newLog], { onConflict: 'employee_id,date' }).then(({ error }) => {
+        if (error) console.warn('Supabase attendance upsert error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Recorded attendance for date ${newLog.date}`, 'Attendance', newLog.id);
     return newLog;
   },
 
   bulkImportAttendance(records, user) {
+    const logsToUpsert = [];
     records.forEach(rec => {
       const idx = attendanceLogs.findIndex(a => a.employee_id === rec.employee_id && a.date === rec.date);
       const entry = {
         ...rec,
-        id: rec.id || `att-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        created_at: new Date().toISOString()
+        id: rec.id && rec.id.length === 36 ? rec.id : generateUUID(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       if (idx >= 0) {
         attendanceLogs[idx] = entry;
       } else {
         attendanceLogs.push(entry);
       }
+      logsToUpsert.push(entry);
     });
+
     saveToStorage('attendance', attendanceLogs);
-    this.logAudit(user?.name, user?.role, `Bulk imported ${records.length} attendance records`, 'Attendance', null, { count: records.length });
+    notifySubscribers('attendance');
+
+    if (isSupabaseConfigured && supabase && logsToUpsert.length > 0) {
+      supabase.from('attendance').upsert(logsToUpsert, { onConflict: 'employee_id,date' }).then(({ error }) => {
+        if (error) console.warn('Supabase bulk attendance error:', error);
+      });
+    }
+
+    this.logAudit(
+      user?.name,
+      user?.role,
+      `Bulk imported ${records.length} attendance records`,
+      'Attendance',
+      null,
+      { count: records.length }
+    );
     return records.length;
   },
 
@@ -463,31 +846,45 @@ export const dataService = {
   createLeaveRequest(requestData, user) {
     const newReq = {
       ...requestData,
-      id: `lvr-${Date.now()}`,
+      id: generateUUID(),
       status: 'Pending',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     leaveRequests = [newReq, ...leaveRequests];
     saveToStorage('leave_requests', leaveRequests);
+    notifySubscribers('leave');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('leave_requests').insert([newReq]).then(({ error }) => {
+        if (error) console.warn('Supabase leave insert error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Submitted leave request for employee ${newReq.employee_id}`, 'Leave', newReq.id);
     return newReq;
   },
 
   updateLeaveStatus(id, status, approverUser, rejectionReason = null) {
-    leaveRequests = leaveRequests.map(l => {
-      if (l.id === id) {
-        return {
-          ...l,
-          status,
-          approved_by: approverUser?.id || 'admin',
-          approver_name: approverUser?.name || 'HR Administrator',
-          approval_date: new Date().toISOString(),
-          rejection_reason: rejectionReason
-        };
-      }
-      return l;
-    });
+    const updates = {
+      status,
+      approved_by: approverUser?.id || null,
+      approver_name: approverUser?.name || 'HR Administrator',
+      approval_date: new Date().toISOString(),
+      rejection_reason: rejectionReason,
+      updated_at: new Date().toISOString()
+    };
+
+    leaveRequests = leaveRequests.map(l => (l.id === id ? { ...l, ...updates } : l));
     saveToStorage('leave_requests', leaveRequests);
+    notifySubscribers('leave');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('leave_requests').update(updates).eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase leave update error:', error);
+      });
+    }
+
     this.logAudit(approverUser?.name, approverUser?.role, `${status} leave request ID ${id}`, 'Leave', id);
     return leaveRequests.find(l => l.id === id);
   },
@@ -497,11 +894,57 @@ export const dataService = {
     return [...governmentRules];
   },
 
-  updateGovernmentRule(id, updates, user) {
-    governmentRules = governmentRules.map(r => r.id === id ? { ...r, ...updates } : r);
+  createGovernmentRule(ruleData, user) {
+    const newRule = {
+      ...ruleData,
+      id: generateUUID(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    governmentRules = [...governmentRules, newRule];
     saveToStorage('gov_rules', governmentRules);
-    this.logAudit(user?.name, user?.role, `Updated government contribution rule: ${id}`, 'Payroll Settings', id, updates);
+    notifySubscribers('gov_rules');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('government_contribution_rules').insert([newRule]).then(({ error }) => {
+        if (error) console.warn('Supabase gov rule insert error:', error);
+      });
+    }
+
+    this.logAudit(user?.name, user?.role, `Created contribution rule: ${newRule.rule_name}`, 'Settings', newRule.id);
+    return newRule;
+  },
+
+  updateGovernmentRule(id, updates, user) {
+    const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
+    governmentRules = governmentRules.map(r => (r.id === id ? { ...r, ...cleanUpdates } : r));
+    saveToStorage('gov_rules', governmentRules);
+    notifySubscribers('gov_rules');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('government_contribution_rules').update(cleanUpdates).eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase gov rule update error:', error);
+      });
+    }
+
+    this.logAudit(user?.name, user?.role, `Updated contribution rule ID ${id}`, 'Settings', id, updates);
     return governmentRules.find(r => r.id === id);
+  },
+
+  deleteGovernmentRule(id, user) {
+    const target = governmentRules.find(r => r.id === id);
+    governmentRules = governmentRules.filter(r => r.id !== id);
+    saveToStorage('gov_rules', governmentRules);
+    notifySubscribers('gov_rules');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('government_contribution_rules').delete().eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase gov rule delete error:', error);
+      });
+    }
+
+    this.logAudit(user?.name, user?.role, `Deleted contribution rule ${target?.rule_name || id}`, 'Settings', id);
+    return true;
   },
 
   getPayrollPeriods() {
@@ -513,36 +956,46 @@ export const dataService = {
   },
 
   createPayrollPeriod(periodData, user) {
+    const periodId = generateUUID();
     const newPeriod = {
       ...periodData,
-      id: `pr-${Date.now()}`,
+      id: periodId,
       status: 'Draft',
       total_gross: 0,
       total_deductions: 0,
       total_net: 0,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
-    // Auto-generate records for all active employees
     const activeEmployees = employees.filter(e => !e.is_deleted && e.employment_status === 'Active');
     const generatedRecords = activeEmployees.map(emp => {
       const calc = computeEmployeePayroll(
         emp,
-        { days_worked: emp.workforce_category === 'office' ? 13 : 12, overtime_hours: emp.workforce_category === 'site' ? 6 : 0 },
+        {
+          days_worked: emp.workforce_category === 'office' ? 13 : 12,
+          overtime_hours: emp.workforce_category === 'site' ? 6 : 0
+        },
         governmentRules,
         newPeriod.period_type
       );
       return {
         ...calc,
-        id: `pr-rec-${newPeriod.id}-${emp.id}`,
-        payroll_period_id: newPeriod.id,
-        status: 'Draft'
+        id: generateUUID(),
+        payroll_period_id: periodId,
+        employee_id: emp.id,
+        workforce_category: emp.workforce_category,
+        rate_type: emp.rate_type,
+        base_rate: Number(emp.base_rate) || 0,
+        status: 'Draft',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
     });
 
-    const totalGross = generatedRecords.reduce((acc, r) => acc + r.gross_pay, 0);
-    const totalDeductions = generatedRecords.reduce((acc, r) => acc + r.total_deductions, 0);
-    const totalNet = generatedRecords.reduce((acc, r) => acc + r.net_pay, 0);
+    const totalGross = generatedRecords.reduce((acc, r) => acc + (Number(r.gross_pay) || 0), 0);
+    const totalDeductions = generatedRecords.reduce((acc, r) => acc + (Number(r.total_deductions) || 0), 0);
+    const totalNet = generatedRecords.reduce((acc, r) => acc + (Number(r.net_pay) || 0), 0);
 
     newPeriod.total_gross = totalGross;
     newPeriod.total_deductions = totalDeductions;
@@ -553,8 +1006,28 @@ export const dataService = {
 
     saveToStorage('payroll_periods', payrollPeriods);
     saveToStorage('payroll_records', payrollRecords);
+    notifySubscribers('payroll');
 
-    this.logAudit(user?.name, user?.role, `Generated payroll period ${newPeriod.period_code}`, 'Payroll', newPeriod.id, { count: activeEmployees.length, net: totalNet });
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('payroll_periods').insert([newPeriod]).then(({ error: pErr }) => {
+        if (pErr) console.warn('Supabase payroll period insert error:', pErr);
+        if (!pErr && generatedRecords.length > 0) {
+          supabase.from('payroll_records').insert(generatedRecords).then(({ error: rErr }) => {
+            if (rErr) console.warn('Supabase payroll records insert error:', rErr);
+          });
+        }
+      });
+    }
+
+    this.logAudit(
+      user?.name,
+      user?.role,
+      `Generated payroll period ${newPeriod.period_code}`,
+      'Payroll',
+      newPeriod.id,
+      { count: activeEmployees.length, net: totalNet }
+    );
+
     return newPeriod;
   },
 
@@ -567,26 +1040,37 @@ export const dataService = {
   },
 
   updatePayrollRecord(id, updates, user) {
-    payrollRecords = payrollRecords.map(r => r.id === id ? { ...r, ...updates } : r);
+    const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
+    payrollRecords = payrollRecords.map(r => (r.id === id ? { ...r, ...cleanUpdates } : r));
     saveToStorage('payroll_records', payrollRecords);
 
-    // Recalculate period totals
     const target = payrollRecords.find(r => r.id === id);
     if (target) {
       const records = payrollRecords.filter(r => r.payroll_period_id === target.payroll_period_id);
-      const totalGross = records.reduce((acc, r) => acc + r.gross_pay, 0);
-      const totalDeductions = records.reduce((acc, r) => acc + r.total_deductions, 0);
-      const totalNet = records.reduce((acc, r) => acc + r.net_pay, 0);
+      const totalGross = records.reduce((acc, r) => acc + (Number(r.gross_pay) || 0), 0);
+      const totalDeductions = records.reduce((acc, r) => acc + (Number(r.total_deductions) || 0), 0);
+      const totalNet = records.reduce((acc, r) => acc + (Number(r.net_pay) || 0), 0);
 
-      payrollPeriods = payrollPeriods.map(p => p.id === target.payroll_period_id ? {
-        ...p,
-        total_gross: totalGross,
-        total_deductions: totalDeductions,
-        total_net: totalNet
-      } : p);
+      payrollPeriods = payrollPeriods.map(p =>
+        p.id === target.payroll_period_id
+          ? {
+              ...p,
+              total_gross: totalGross,
+              total_deductions: totalDeductions,
+              total_net: totalNet,
+              updated_at: new Date().toISOString()
+            }
+          : p
+      );
       saveToStorage('payroll_periods', payrollPeriods);
+
+      if (isSupabaseConfigured && supabase) {
+        supabase.from('payroll_records').update(cleanUpdates).eq('id', id).then();
+        supabase.from('payroll_periods').update({ total_gross: totalGross, total_deductions: totalDeductions, total_net: totalNet, updated_at: new Date().toISOString() }).eq('id', target.payroll_period_id).then();
+      }
     }
 
+    notifySubscribers('payroll');
     this.logAudit(user?.name, user?.role, `Edited payroll record ID ${id}`, 'Payroll', id);
     return payrollRecords.find(r => r.id === id);
   },
@@ -595,60 +1079,89 @@ export const dataService = {
     const p = payrollPeriods.find(item => item.id === periodId);
     if (!p) return null;
 
-    payrollPeriods = payrollPeriods.map(item => {
-      if (item.id === periodId) {
-        return {
-          ...item,
-          status,
-          approved_by: status === 'Approved' ? user?.id : item.approved_by,
-          approver_name: status === 'Approved' ? user?.name : item.approver_name,
-          approved_at: status === 'Approved' ? new Date().toISOString() : item.approved_at
-        };
-      }
-      return item;
-    });
+    const periodUpdates = {
+      status,
+      approved_by: status === 'Approved' ? user?.id || null : p.approved_by,
+      approver_name: status === 'Approved' ? user?.name || 'HR Administrator' : p.approver_name,
+      approved_at: status === 'Approved' ? new Date().toISOString() : p.approved_at,
+      updated_at: new Date().toISOString()
+    };
 
-    payrollRecords = payrollRecords.map(r => r.payroll_period_id === periodId ? { ...r, status } : r);
+    payrollPeriods = payrollPeriods.map(item =>
+      item.id === periodId ? { ...item, ...periodUpdates } : item
+    );
+
+    payrollRecords = payrollRecords.map(r =>
+      r.payroll_period_id === periodId ? { ...r, status, updated_at: new Date().toISOString() } : r
+    );
 
     saveToStorage('payroll_periods', payrollPeriods);
     saveToStorage('payroll_records', payrollRecords);
+    notifySubscribers('payroll');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('payroll_periods').update(periodUpdates).eq('id', periodId).then();
+      supabase.from('payroll_records').update({ status, updated_at: new Date().toISOString() }).eq('payroll_period_id', periodId).then();
+    }
 
     this.logAudit(user?.name, user?.role, `Changed Payroll Period ${p.period_code} status to ${status}`, 'Payroll', periodId);
     return payrollPeriods.find(item => item.id === periodId);
   },
 
   bulkImportPayroll(periodId, parsedRows, user) {
+    const recordsToUpsert = [];
     parsedRows.forEach(row => {
-      const idx = payrollRecords.findIndex(r => r.payroll_period_id === periodId && r.employee_id === row.employee_id);
+      const idx = payrollRecords.findIndex(
+        r => r.payroll_period_id === periodId && r.employee_id === row.employee_id
+      );
       const record = {
         ...row,
-        id: row.id || `pr-rec-${periodId}-${row.employee_id}`,
-        payroll_period_id: periodId
+        id: row.id && row.id.length === 36 ? row.id : generateUUID(),
+        payroll_period_id: periodId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       if (idx >= 0) {
         payrollRecords[idx] = record;
       } else {
         payrollRecords.push(record);
       }
+      recordsToUpsert.push(record);
     });
 
-    // Recalculate period totals
     const records = payrollRecords.filter(r => r.payroll_period_id === periodId);
     const totalGross = records.reduce((acc, r) => acc + (Number(r.gross_pay) || 0), 0);
     const totalDeductions = records.reduce((acc, r) => acc + (Number(r.total_deductions) || 0), 0);
     const totalNet = records.reduce((acc, r) => acc + (Number(r.net_pay) || 0), 0);
 
-    payrollPeriods = payrollPeriods.map(p => p.id === periodId ? {
-      ...p,
-      total_gross: totalGross,
-      total_deductions: totalDeductions,
-      total_net: totalNet
-    } : p);
+    payrollPeriods = payrollPeriods.map(p =>
+      p.id === periodId
+        ? {
+            ...p,
+            total_gross: totalGross,
+            total_deductions: totalDeductions,
+            total_net: totalNet,
+            updated_at: new Date().toISOString()
+          }
+        : p
+    );
 
     saveToStorage('payroll_records', payrollRecords);
     saveToStorage('payroll_periods', payrollPeriods);
+    notifySubscribers('payroll');
 
-    this.logAudit(user?.name, user?.role, `Excel imported ${parsedRows.length} payroll entries for Period ID ${periodId}`, 'Payroll', periodId);
+    if (isSupabaseConfigured && supabase && recordsToUpsert.length > 0) {
+      supabase.from('payroll_records').upsert(recordsToUpsert).then();
+      supabase.from('payroll_periods').update({ total_gross: totalGross, total_deductions: totalDeductions, total_net: totalNet }).eq('id', periodId).then();
+    }
+
+    this.logAudit(
+      user?.name,
+      user?.role,
+      `Excel imported ${parsedRows.length} payroll entries for Period ID ${periodId}`,
+      'Payroll',
+      periodId
+    );
     return parsedRows.length;
   },
 
@@ -658,16 +1171,38 @@ export const dataService = {
   },
 
   createDepartment(deptData, user) {
-    const newDept = { ...deptData, id: `dept-${Date.now()}` };
+    const newDept = {
+      ...deptData,
+      id: generateUUID(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
     departments = [...departments, newDept];
     saveToStorage('departments', departments);
+    notifySubscribers('departments');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('departments').insert([newDept]).then(({ error }) => {
+        if (error) console.warn('Supabase department insert error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Created department: ${newDept.name}`, 'Settings', newDept.id);
     return newDept;
   },
 
   updateDepartment(id, updates, user) {
-    departments = departments.map(d => d.id === id ? { ...d, ...updates } : d);
+    const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
+    departments = departments.map(d => (d.id === id ? { ...d, ...cleanUpdates } : d));
     saveToStorage('departments', departments);
+    notifySubscribers('departments');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('departments').update(cleanUpdates).eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase department update error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Updated department ID ${id}`, 'Settings', id);
     return departments.find(d => d.id === id);
   },
@@ -676,6 +1211,14 @@ export const dataService = {
     const target = departments.find(d => d.id === id);
     departments = departments.filter(d => d.id !== id);
     saveToStorage('departments', departments);
+    notifySubscribers('departments');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('departments').delete().eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase department delete error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Deleted department ${target?.name || id}`, 'Settings', id);
     return true;
   },
@@ -685,16 +1228,38 @@ export const dataService = {
   },
 
   createDesignation(desigData, user) {
-    const newDesig = { ...desigData, id: `desig-${Date.now()}` };
+    const newDesig = {
+      ...desigData,
+      id: generateUUID(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
     designations = [...designations, newDesig];
     saveToStorage('designations', designations);
+    notifySubscribers('designations');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('designations').insert([newDesig]).then(({ error }) => {
+        if (error) console.warn('Supabase designation insert error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Created designation: ${newDesig.title}`, 'Settings', newDesig.id);
     return newDesig;
   },
 
   updateDesignation(id, updates, user) {
-    designations = designations.map(d => d.id === id ? { ...d, ...updates } : d);
+    const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
+    designations = designations.map(d => (d.id === id ? { ...d, ...cleanUpdates } : d));
     saveToStorage('designations', designations);
+    notifySubscribers('designations');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('designations').update(cleanUpdates).eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase designation update error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Updated designation ID ${id}`, 'Settings', id);
     return designations.find(d => d.id === id);
   },
@@ -703,35 +1268,15 @@ export const dataService = {
     const target = designations.find(d => d.id === id);
     designations = designations.filter(d => d.id !== id);
     saveToStorage('designations', designations);
+    notifySubscribers('designations');
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('designations').delete().eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase designation delete error:', error);
+      });
+    }
+
     this.logAudit(user?.name, user?.role, `Deleted designation ${target?.title || id}`, 'Settings', id);
-    return true;
-  },
-
-  // --- GOVERNMENT CONTRIBUTION RULES CRUD ---
-  getGovernmentRules() {
-    return [...governmentRules];
-  },
-
-  createGovernmentRule(ruleData, user) {
-    const newRule = { ...ruleData, id: `gov-rule-${Date.now()}` };
-    governmentRules = [...governmentRules, newRule];
-    saveToStorage('gov_rules', governmentRules);
-    this.logAudit(user?.name, user?.role, `Created contribution rule: ${newRule.rule_name}`, 'Settings', newRule.id);
-    return newRule;
-  },
-
-  updateGovernmentRule(id, updates, user) {
-    governmentRules = governmentRules.map(r => r.id === id ? { ...r, ...updates } : r);
-    saveToStorage('gov_rules', governmentRules);
-    this.logAudit(user?.name, user?.role, `Updated contribution rule ID ${id}`, 'Settings', id);
-    return governmentRules.find(r => r.id === id);
-  },
-
-  deleteGovernmentRule(id, user) {
-    const target = governmentRules.find(r => r.id === id);
-    governmentRules = governmentRules.filter(r => r.id !== id);
-    saveToStorage('gov_rules', governmentRules);
-    this.logAudit(user?.name, user?.role, `Deleted contribution rule ${target?.rule_name || id}`, 'Settings', id);
     return true;
   },
 
@@ -740,13 +1285,24 @@ export const dataService = {
   },
 
   updateCompanySettings(updates, user) {
-    companySettings = { ...companySettings, ...updates };
+    const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
+    companySettings = { ...companySettings, ...cleanUpdates };
     saveToStorage('company_settings', companySettings);
+    notifySubscribers('settings');
+
+    if (isSupabaseConfigured && supabase) {
+      if (companySettings.id) {
+        supabase.from('company_settings').update(cleanUpdates).eq('id', companySettings.id).then();
+      } else {
+        supabase.from('company_settings').insert([cleanUpdates]).then();
+      }
+    }
+
     this.logAudit(user?.name, user?.role, `Updated company profile settings`, 'Settings');
     return companySettings;
   },
 
-  // --- CLEAR ALL WORKFORCE DATA (CLEAN SLATE LIVE MODE) ---
+  // --- CLEAR ALL WORKFORCE DATA ---
   clearAllWorkforceData() {
     employees = [];
     projects = [];
@@ -771,6 +1327,7 @@ export const dataService = {
     saveToStorage('leave_requests', []);
     saveToStorage('notifications', []);
     saveToStorage('audit_logs', []);
+    notifySubscribers('clear');
   },
 
   // --- RESET TO DEMO FACTORY ---
@@ -793,3 +1350,8 @@ export const dataService = {
     window.location.reload();
   }
 };
+
+// Initiate automatic background sync on module load
+if (typeof window !== 'undefined') {
+  dataService.syncWithSupabase();
+}

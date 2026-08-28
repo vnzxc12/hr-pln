@@ -92,20 +92,28 @@ export const SettingsPage = () => {
 
   useEffect(() => {
     loadData();
+    const unsubscribe = dataService.subscribe(loadData);
+    return () => unsubscribe();
   }, []);
 
   // --- USER ACCOUNTS ---
   const handleCreateUser = (e) => {
     e.preventDefault();
     try {
-      if (!newUserData.name.trim() || !newUserData.email.trim() || !newUserData.password) {
-        alert('Please fill out all required fields.');
+      const usernameVal = newUserData.username?.trim() || newUserData.name.trim().toLowerCase().replace(/\s+/g, '.');
+      if (!newUserData.name.trim() || !usernameVal || !newUserData.password) {
+        alert('Please fill out Name, Username, and Password.');
         return;
       }
-      createUser(newUserData);
-      showToast(`User account for ${newUserData.name} created.`, 'success');
+      const emailVal = newUserData.email?.trim() || `${usernameVal}@lunayveconstruction.com`;
+      createUser({
+        ...newUserData,
+        username: usernameVal,
+        email: emailVal
+      });
+      showToast(`User account for ${newUserData.name} (@${usernameVal}) created successfully.`, 'success');
       setIsUserModalOpen(false);
-      setNewUserData({ name: '', email: '', password: '', role: 'employee', title: '', department: 'Operations' });
+      setNewUserData({ name: '', username: '', email: '', password: '', role: 'employee', title: '', department: 'Operations' });
     } catch (err) {
       alert(err.message);
     }

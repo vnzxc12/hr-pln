@@ -32,6 +32,8 @@ export const LeaveRequestsPage = () => {
 
   useEffect(() => {
     loadData();
+    const unsubscribe = dataService.subscribe(loadData);
+    return () => unsubscribe();
   }, []);
 
   const handleApplyLeave = (e) => {

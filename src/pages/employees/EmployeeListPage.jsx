@@ -54,6 +54,8 @@ export const EmployeeListPage = () => {
 
   useEffect(() => {
     loadData();
+    const unsubscribe = dataService.subscribe(loadData);
+    return () => unsubscribe();
   }, []);
 
   // Update query param when filter changes

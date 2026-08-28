@@ -35,7 +35,7 @@ export const DashboardPage = () => {
   const [documents, setDocuments] = useState([]);
   const [notifications, setNotifications] = useState([]);
 
-  useEffect(() => {
+  const loadData = () => {
     setEmployees(dataService.getEmployees());
     setProjects(dataService.getProjects());
     setSites(dataService.getSites());
@@ -43,6 +43,12 @@ export const DashboardPage = () => {
     setPayrollPeriods(dataService.getPayrollPeriods());
     setDocuments(dataService.getAllDocuments());
     setNotifications(dataService.getNotifications());
+  };
+
+  useEffect(() => {
+    loadData();
+    const unsubscribe = dataService.subscribe(loadData);
+    return () => unsubscribe();
   }, []);
 
   // Workforce Metrics

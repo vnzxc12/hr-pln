@@ -37,6 +37,8 @@ export const ProjectsListPage = () => {
 
   useEffect(() => {
     loadData();
+    const unsubscribe = dataService.subscribe(loadData);
+    return () => unsubscribe();
   }, []);
 
   const handleCreateProject = (e) => {
