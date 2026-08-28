@@ -30,6 +30,66 @@ export const generateUUID = () => {
   });
 };
 
+// Robust UUID Sanitizer for PostgreSQL foreign keys
+const sanitizeUUID = (val) => {
+  if (!val || typeof val !== 'string') return null;
+  const trimmed = val.trim();
+  if (!trimmed || trimmed === '' || trimmed === 'none' || trimmed === 'null' || trimmed === 'undefined') return null;
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidPattern.test(trimmed) ? trimmed : null;
+};
+
+// PostgreSQL Schema Sanitizer for Employee Records
+const sanitizeEmployeeForDB = (data) => {
+  const sanitized = { ...data };
+
+  // Foreign keys / UUID fields
+  if ('department_id' in sanitized) sanitized.department_id = sanitizeUUID(sanitized.department_id);
+  if ('designation_id' in sanitized) sanitized.designation_id = sanitizeUUID(sanitized.designation_id);
+  if ('assigned_project_id' in sanitized) sanitized.assigned_project_id = sanitizeUUID(sanitized.assigned_project_id);
+  if ('assigned_site_id' in sanitized) sanitized.assigned_site_id = sanitizeUUID(sanitized.assigned_site_id);
+  if ('supervisor_id' in sanitized) sanitized.supervisor_id = sanitizeUUID(sanitized.supervisor_id);
+  if ('foreman_id' in sanitized) sanitized.foreman_id = sanitizeUUID(sanitized.foreman_id);
+
+  // String fields: convert empty strings to null or defaults
+  if (sanitized.first_name !== undefined) sanitized.first_name = sanitized.first_name?.trim() || '';
+  if (sanitized.last_name !== undefined) sanitized.last_name = sanitized.last_name?.trim() || '';
+  if (sanitized.middle_name !== undefined) sanitized.middle_name = sanitized.middle_name?.trim() || null;
+  if (sanitized.suffix !== undefined) sanitized.suffix = sanitized.suffix?.trim() || null;
+  if (sanitized.email !== undefined) sanitized.email = sanitized.email?.trim() || null;
+  if (sanitized.address !== undefined) sanitized.address = sanitized.address?.trim() || null;
+  if (sanitized.date_of_birth !== undefined) sanitized.date_of_birth = sanitized.date_of_birth?.trim() || null;
+  if (sanitized.date_hired !== undefined) sanitized.date_hired = sanitized.date_hired?.trim() || new Date().toISOString().split('T')[0];
+  if (sanitized.contract_start_date !== undefined) sanitized.contract_start_date = sanitized.contract_start_date?.trim() || null;
+  if (sanitized.contract_end_date !== undefined) sanitized.contract_end_date = sanitized.contract_end_date?.trim() || null;
+  if (sanitized.date_assigned !== undefined) sanitized.date_assigned = sanitized.date_assigned?.trim() || null;
+  if (sanitized.emergency_contact_name !== undefined) sanitized.emergency_contact_name = sanitized.emergency_contact_name?.trim() || null;
+  if (sanitized.emergency_contact_number !== undefined) sanitized.emergency_contact_number = sanitized.emergency_contact_number?.trim() || null;
+  if (sanitized.emergency_contact_relation !== undefined) sanitized.emergency_contact_relation = sanitized.emergency_contact_relation?.trim() || null;
+
+  // Statutory numbers
+  if (sanitized.sss_number !== undefined) sanitized.sss_number = sanitized.sss_number?.trim() || null;
+  if (sanitized.philhealth_number !== undefined) sanitized.philhealth_number = sanitized.philhealth_number?.trim() || null;
+  if (sanitized.pagibig_number !== undefined) sanitized.pagibig_number = sanitized.pagibig_number?.trim() || null;
+  if (sanitized.tin_number !== undefined) sanitized.tin_number = sanitized.tin_number?.trim() || null;
+
+  // Defaults
+  if (sanitized.gender !== undefined) sanitized.gender = sanitized.gender?.trim() || 'Male';
+  if (sanitized.civil_status !== undefined) sanitized.civil_status = sanitized.civil_status?.trim() || 'Single';
+  if (sanitized.nationality !== undefined) sanitized.nationality = sanitized.nationality?.trim() || 'Filipino';
+  if (sanitized.employment_type !== undefined) sanitized.employment_type = sanitized.employment_type?.trim() || 'Regular';
+  if (sanitized.employment_status !== undefined) sanitized.employment_status = sanitized.employment_status?.trim() || 'Active';
+  if (sanitized.workforce_category !== undefined) sanitized.workforce_category = sanitized.workforce_category || 'site';
+  if (sanitized.rate_type !== undefined) sanitized.rate_type = sanitized.rate_type || 'Daily';
+
+  // Numbers
+  if (sanitized.base_rate !== undefined) sanitized.base_rate = Number(sanitized.base_rate) || 0;
+  if (sanitized.monthly_allowance !== undefined) sanitized.monthly_allowance = Number(sanitized.monthly_allowance) || 0;
+  if (sanitized.daily_allowance !== undefined) sanitized.daily_allowance = Number(sanitized.daily_allowance) || 0;
+
+  return sanitized;
+};
+
 const loadFromStorage = (key, fallback) => {
   try {
     const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}${key}`);
@@ -365,39 +425,31 @@ export const dataService = {
       ? employeeData.id
       : generateUUID();
 
-    const cleanData = {
+    const cleanData = sanitizeEmployeeForDB({
       ...employeeData,
       id: newId,
       first_name: employeeData.first_name?.trim() || '',
-      middle_name: employeeData.middle_name?.trim() || null,
       last_name: employeeData.last_name?.trim() || '',
-      suffix: employeeData.suffix?.trim() || null,
       workforce_category: employeeData.workforce_category || 'site',
       contact_number: employeeData.contact_number || '+63 900 000 0000',
-      email: employeeData.email?.trim() || null,
-      department_id: employeeData.department_id || null,
-      designation_id: employeeData.designation_id || null,
-      assigned_project_id: employeeData.assigned_project_id || null,
-      assigned_site_id: employeeData.assigned_site_id || null,
-      supervisor_id: employeeData.supervisor_id || null,
-      foreman_id: employeeData.foreman_id || null,
-      rate_type: employeeData.rate_type || 'Daily',
-      base_rate: Number(employeeData.base_rate) || 0,
-      monthly_allowance: Number(employeeData.monthly_allowance) || 0,
-      daily_allowance: Number(employeeData.daily_allowance) || 0,
+      date_hired: employeeData.date_hired?.trim() || new Date().toISOString().split('T')[0],
       is_deleted: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
-    };
+    });
 
     employees = [cleanData, ...employees];
     saveToStorage('employees', employees);
     notifySubscribers('employees');
 
-    // Async write to Supabase
+    // Async write to Supabase PostgreSQL cloud backend
     if (isSupabaseConfigured && supabase) {
-      supabase.from('employees').insert([cleanData]).then(({ error }) => {
-        if (error) console.warn('Supabase create employee error:', error);
+      supabase.from('employees').insert([cleanData]).then(({ data, error }) => {
+        if (error) {
+          console.error('Supabase create employee error:', error);
+        } else {
+          console.log('Supabase employee created successfully:', cleanData.employee_id);
+        }
       });
     }
 
@@ -470,11 +522,8 @@ export const dataService = {
       );
     }
 
-    // Clean numerical values
-    const cleanUpdates = { ...updates };
-    if (cleanUpdates.base_rate !== undefined) cleanUpdates.base_rate = Number(cleanUpdates.base_rate) || 0;
-    if (cleanUpdates.monthly_allowance !== undefined) cleanUpdates.monthly_allowance = Number(cleanUpdates.monthly_allowance) || 0;
-    if (cleanUpdates.daily_allowance !== undefined) cleanUpdates.daily_allowance = Number(cleanUpdates.daily_allowance) || 0;
+    // Clean & sanitize updates for PostgreSQL
+    const cleanUpdates = sanitizeEmployeeForDB({ ...updates });
     cleanUpdates.updated_at = new Date().toISOString();
 
     const updated = { ...existing, ...cleanUpdates };
@@ -482,11 +531,14 @@ export const dataService = {
     saveToStorage('employees', employees);
     notifySubscribers('employees');
 
-    // Async write to Supabase
+    // Async write to Supabase PostgreSQL cloud backend
     if (isSupabaseConfigured && supabase) {
-      const { ...dbFields } = cleanUpdates;
-      supabase.from('employees').update(dbFields).eq('id', targetId).then(({ error }) => {
-        if (error) console.warn('Supabase update employee error:', error);
+      supabase.from('employees').update(cleanUpdates).eq('id', targetId).then(({ data, error }) => {
+        if (error) {
+          console.error('Supabase update employee error:', error);
+        } else {
+          console.log('Supabase employee updated successfully:', targetId);
+        }
       });
     }
 
@@ -631,6 +683,9 @@ export const dataService = {
     const newAsg = {
       ...assignmentData,
       id: generateUUID(),
+      employee_id: sanitizeUUID(assignmentData.employee_id) || assignmentData.employee_id,
+      project_id: sanitizeUUID(assignmentData.project_id),
+      site_id: sanitizeUUID(assignmentData.site_id),
       created_at: new Date().toISOString()
     };
     siteAssignments = [newAsg, ...siteAssignments];
@@ -678,7 +733,9 @@ export const dataService = {
     const newDoc = {
       ...docData,
       id: generateUUID(),
-      uploaded_by: user?.id || null,
+      employee_id: sanitizeUUID(docData.employee_id) || docData.employee_id,
+      category_id: sanitizeUUID(docData.category_id),
+      uploaded_by: sanitizeUUID(user?.id),
       uploader_name: user?.name || 'HR Administrator',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
